@@ -1,0 +1,194 @@
+# Imihigo Learn 🎓
+
+AI-Powered Skill Verification & Job Matching Platform for Rwanda
+
+## 🌍 Mission
+Revolutionize hiring in Rwanda by creating a trustless skill verification system that bridges the gap between education and employment.
+
+## 🎯 Core Problems We Solve
+1. **Certificate Fraud**: Employers can't trust paper credentials
+2. **Skills Mismatch**: 50,000+ graduates yearly with unverified skills
+3. **Informal Sector Gap**: Skilled workers (welders, tailors, mechanics) lack credentials
+4. **Recruitment Waste**: Companies spend months hiring wrong candidates
+
+## 🚀 Solution Overview
+
+### 1. Adaptive Skill Testing Engine
+- AI-generated personalized technical challenges
+- Video interview analysis (body language, confidence scoring)
+- Project portfolio plagiarism detection
+- Mobile-first proctoring with anti-cheat
+
+### 2. Blockchain Micro-Credentials
+- Tamper-proof digital certificates (Polygon blockchain)
+- QR code instant verification
+- Stackable skill badges with progression paths
+
+### 3. Smart Job Matching
+- ML-powered candidate-to-job matching
+- Success prediction based on historical data
+- SMS alerts for gig economy opportunities
+
+### 4. Community Learning Hub
+- Peer-to-peer marketplace
+- Kinyarwanda video tutorials
+- Gamified teaching rewards
+
+## 🛠 Tech Stack
+
+### Frontend
+- **Framework**: React 18 + TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS + Framer Motion
+- **State Management**: Zustand + React Query
+- **Mobile**: Progressive Web App (PWA)
+
+### Backend
+- **Runtime**: Node.js 20+
+- **Framework**: Express + TypeScript
+- **Database**: PostgreSQL 15
+- **ORM**: Prisma
+- **Cache**: Redis
+- **Queue**: Bull (for async jobs)
+
+### AI/ML Services
+- **NLP**: OpenAI API / Anthropic Claude API
+- **Video Analysis**: Custom models + Cloud Vision API
+- **Code Evaluation**: Judge0 API (sandboxed execution)
+
+### Blockchain
+- **Network**: Polygon (low gas fees)
+- **Smart Contracts**: Solidity
+- **Web3**: ethers.js
+
+### Infrastructure
+- **Hosting**: AWS / Azure Rwanda
+- **CDN**: CloudFront
+- **Storage**: S3-compatible (MinIO for dev)
+- **CI/CD**: GitHub Actions
+
+## 📁 Project Structure
+
+```
+imihigo-learn/
+├── frontend/              # React + TypeScript PWA
+│   ├── src/
+│   │   ├── components/   # Reusable UI components
+│   │   ├── features/     # Feature modules
+│   │   ├── pages/        # Page components
+│   │   ├── hooks/        # Custom React hooks
+│   │   ├── services/     # API clients
+│   │   ├── stores/       # Zustand stores
+│   │   ├── utils/        # Utilities
+│   │   └── types/        # TypeScript types
+│   ├── public/
+│   └── package.json
+│
+├── backend/              # Express + TypeScript API
+│   ├── src/
+│   │   ├── controllers/  # Route handlers
+│   │   ├── services/     # Business logic
+│   │   ├── models/       # Prisma models
+│   │   ├── middleware/   # Express middleware
+│   │   ├── routes/       # API routes
+│   │   ├── utils/        # Utilities
+│   │   ├── jobs/         # Background jobs
+│   │   └── types/        # TypeScript types
+│   ├── prisma/
+│   │   └── schema.prisma
+│   └── package.json
+│
+├── shared/               # Shared types & utilities
+│   ├── types/           # Common TypeScript types
+│   └── constants/       # Shared constants
+│
+├── contracts/           # Blockchain smart contracts
+│   ├── SkillCredential.sol
+│   └── test/
+│
+└── docs/                # Documentation
+    ├── API.md
+    ├── ARCHITECTURE.md
+    └── DEPLOYMENT.md
+```
+
+## 🎨 Design Philosophy
+
+**Rwandan-First Design**:
+- Kinyarwanda as primary language
+- Offline-first architecture (limited connectivity areas)
+- Mobile-optimized (most users access via phone)
+- Low-bandwidth image optimization
+
+**Aesthetic Direction**:
+- **Tone**: Modern, trustworthy, aspirational yet accessible
+- **Colors**: Rwanda flag colors (blue, yellow, green) + warm accents
+- **Typography**: Professional but friendly
+- **Motion**: Smooth, confident animations that build trust
+
+## 📊 Success Metrics (Year 1)
+
+- ✅ 10,000 verified user profiles
+- ✅ 40% reduction in SME hiring time
+- ✅ 5,000 informal workers certified
+- ✅ Zero paper certificates (100% digital)
+- ✅ 70%+ job match success rate
+
+## 🌟 Unique Innovations
+
+1. **Kinyarwanda Voice Coding Tutor** - Speech recognition for local language learning
+2. **Skill Decay Alerts** - Automated certification refresh reminders
+3. **Employer Co-Investment** - Companies sponsor training for matched candidates
+4. **Community Trust Score** - Peer endorsements + project validations
+
+## 🚦 Development Phases
+
+### Phase 1: MVP (Months 1-3)
+- [ ] User authentication & profiles
+- [ ] Basic skill assessment (coding challenges)
+- [ ] Simple job posting & matching
+- [ ] Certificate generation (PDF)
+
+### Phase 2: AI Integration (Months 4-6)
+- [ ] Video interview analysis
+- [ ] Plagiarism detection
+- [ ] ML-powered job matching
+- [ ] Blockchain credential issuance
+
+### Phase 3: Community Features (Months 7-9)
+- [ ] Peer-to-peer learning marketplace
+- [ ] Kinyarwanda video tutorials
+- [ ] Gamification system
+- [ ] SMS notification system
+
+### Phase 4: Scale (Months 10-12)
+- [ ] Mobile apps (iOS/Android)
+- [ ] Enterprise dashboard for employers
+- [ ] Analytics & reporting
+- [ ] Government integration (NESA, RDB)
+
+## 🔒 Security Considerations
+
+- End-to-end encryption for video assessments
+- Multi-factor authentication
+- GDPR-compliant data handling
+- Secure smart contract audits
+- Anti-cheating mechanisms (device fingerprinting, behavior analysis)
+
+## 🤝 Contributing
+
+This is a mission-driven project to transform Rwanda's job market. We welcome contributors who share this vision.
+
+## 📄 License
+
+Proprietary - All rights reserved (for now, can open-source modules later)
+
+## 📞 Contact
+
+Project Lead: [Your Name]
+Email: hello@imihigolearn.rw
+Location: Kigali, Rwanda
+
+---
+
+**Imihigo** = Commitment to achieve excellence (in Kinyarwanda) 🇷🇼

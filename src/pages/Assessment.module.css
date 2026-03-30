@@ -1,0 +1,61 @@
+.container { max-width: 720px; margin: 0 auto; padding: 0 1.5rem; }
+
+.topBar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.progressInfo { font-size: 0.88rem; color: #6b7280; font-weight: 600; }
+.timer { font-size: 1rem; font-weight: 700; }
+
+.questionCard {
+  background: #111827; border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px; padding: 2rem; margin-bottom: 1.5rem;
+}
+
+.questionNum { font-size: 0.8rem; font-weight: 600; color: #6366f1; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem; }
+.questionText { font-size: 1.25rem; font-weight: 700; line-height: 1.5; margin-bottom: 1.75rem; }
+
+.options { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.option {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 1rem 1.25rem; border-radius: 10px;
+  background: #1f2937; border: 2px solid rgba(255,255,255,0.07);
+  text-align: left; font-size: 0.95rem; color: #f9fafb;
+  transition: all 0.15s; cursor: pointer;
+}
+.option:hover { border-color: rgba(99,102,241,0.4); background: rgba(99,102,241,0.06); }
+.optionSelected { border-color: #6366f1; background: rgba(99,102,241,0.12); }
+
+.optionLetter {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700; flex-shrink: 0;
+}
+.optionSelected .optionLetter { background: #6366f1; }
+
+.navButtons { display: flex; justify-content: space-between; align-items: center; }
+
+.dotNav { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: center; flex: 1; padding: 0 1rem; }
+
+.dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #374151; border: none; cursor: pointer; transition: all 0.15s;
+}
+.dotCurrent { background: #6366f1; transform: scale(1.3); }
+.dotAnswered { background: #10b981; }
+
+.resultPage { display: flex; justify-content: center; align-items: center; min-height: 60vh; padding: 2rem; }
+
+.resultCard {
+  background: #111827; border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px; padding: 3rem; max-width: 480px; width: 100%; text-align: center;
+}
+.resultIcon { font-size: 5rem; margin-bottom: 1.5rem; }
+.resultTitle { font-size: 2rem; font-weight: 800; margin-bottom: 0.75rem; }
+.resultScore { font-size: 4rem; font-weight: 900; margin-bottom: 1rem; }
+.resultMsg { color: #9ca3af; line-height: 1.6; margin-bottom: 1.5rem; }
+
+.credentialBadge {
+  background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3);
+  border-radius: 10px; padding: 0.75rem 1rem; font-size: 0.85rem; color: #34d399; margin-bottom: 1.5rem;
+}
+
+.resultActions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }

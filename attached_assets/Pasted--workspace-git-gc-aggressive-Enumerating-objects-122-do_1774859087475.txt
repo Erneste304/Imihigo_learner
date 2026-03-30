@@ -1,0 +1,41 @@
+~/workspace$ git gc --aggressive
+Enumerating objects: 122, done.
+Counting objects: 100% (122/122), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (116/116), done.
+Writing objects: 100% (122/122), done.
+Total 122 (delta 42), reused 0 (delta 0), pack-reused 0 (from 0)
+~/workspace$ git push -u origin main --no-thin
+Enumerating objects: 115, done.
+Counting objects: 100% (115/115), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (77/77), done.
+Writing objects: 100% (115/115), 253.25 KiB | 63.31 MiB/s, done.
+Total 115 (delta 36), reused 109 (delta 32), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (36/36), done.
+remote: fatal: did not receive expected object 47b927a77de26f3d86adb0cb5cbf24f096b8e73a
+error: remote unpack failed: index-pack failed
+To https://github.com/Erneste304/Imihigo_learner.git
+ ! [remote rejected] main -> main (failed)
+error: failed to push some refs to 'https://github.com/Erneste304/Imihigo_learner.git'
+~/workspace$ git repack -a -d -f --depth=250 --window=250
+Enumerating objects: 122, done.
+Counting objects: 100% (122/122), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (116/116), done.
+Writing objects: 100% (122/122), done.
+Total 122 (delta 42), reused 80 (delta 0), pack-reused 0 (from 0)
+~/workspace$ git push -u origin main
+Enumerating objects: 115, done.
+Counting objects: 100% (115/115), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (77/77), done.
+Writing objects: 100% (115/115), 253.22 KiB | 126.61 MiB/s, done.
+Total 115 (delta 36), reused 109 (delta 32), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (36/36), done.
+remote: fatal: did not receive expected object 47b927a77de26f3d86adb0cb5cbf24f096b8e73a
+error: remote unpack failed: index-pack failed
+To https://github.com/Erneste304/Imihigo_learner.git
+ ! [remote rejected] main -> main (failed)
+error: failed to push some refs to 'https://github.com/Erneste304/Imihigo_learner.git'
+~/workspace$ 

@@ -1,0 +1,37 @@
+.header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+.greeting { font-size: 1.75rem; font-weight: 800; margin-bottom: 0.25rem; }
+
+.stats { margin-bottom: 2.5rem; }
+.statCard { text-align: center; padding: 1.5rem 1rem; }
+.statIcon { font-size: 2rem; margin-bottom: 0.75rem; }
+.statValue { font-size: 2.25rem; font-weight: 900; color: #6366f1; }
+.statLabel { font-size: 0.8rem; color: #6b7280; margin-top: 0.2rem; }
+
+.twoCol { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+@media (max-width: 900px) { .twoCol { grid-template-columns: 1fr; } }
+
+.sectionTitle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.sectionTitle h2 { font-size: 1.15rem; font-weight: 700; }
+
+.credList, .jobList { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.credCard { padding: 1rem 1.25rem; }
+.credTop { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; }
+.credIcon { font-size: 1.75rem; }
+.credName { font-weight: 700; font-size: 0.92rem; }
+.credDate { font-size: 0.78rem; color: #6b7280; margin-top: 0.1rem; }
+.credHash { display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; }
+.hashText { color: #6366f1; font-family: monospace; }
+
+.jobCard { padding: 1rem 1.25rem; cursor: pointer; transition: border-color 0.15s; }
+.jobCard:hover { border-color: rgba(99,102,241,0.4); }
+.jobTop { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.6rem; }
+.jobTitle { font-weight: 700; font-size: 0.92rem; margin-bottom: 0.15rem; }
+.jobCompany { font-size: 0.78rem; color: #6b7280; }
+.matchRate { font-size: 1.2rem; font-weight: 800; }
+.jobMeta { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+.salary { font-size: 0.78rem; color: #9ca3af; margin-left: auto; }
+
+.empty { text-align: center; padding: 2rem; }
+.emptyIcon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+.empty p { color: #6b7280; font-size: 0.88rem; }

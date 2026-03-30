@@ -1,0 +1,56 @@
+.profileCard {
+  display: flex; align-items: flex-start; gap: 1.5rem;
+  background: #111827; border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px; padding: 2rem; margin-bottom: 2rem; flex-wrap: wrap;
+}
+
+.avatarLarge {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; font-weight: 800; flex-shrink: 0;
+}
+
+.profileInfo { flex: 1; min-width: 200px; }
+.profileName { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem; }
+.profileMeta { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; font-size: 0.88rem; color: #6b7280; margin-bottom: 0.6rem; }
+.bio { color: #9ca3af; font-size: 0.9rem; line-height: 1.5; }
+
+.tokenBadge {
+  background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2);
+  color: #fbbf24; padding: 0.5rem 1rem; border-radius: 10px;
+  font-weight: 700; font-size: 1rem; white-space: nowrap;
+}
+
+.statsRow { margin-bottom: 2.5rem; }
+.statCard { text-align: center; }
+.statIcon { font-size: 1.75rem; margin-bottom: 0.5rem; }
+.statVal { font-size: 2rem; font-weight: 900; color: #6366f1; }
+.statLbl { font-size: 0.78rem; color: #6b7280; margin-top: 0.2rem; }
+
+.sectionTitle { font-size: 1.25rem; font-weight: 700; margin-bottom: 1.25rem; }
+
+.credCard { display: flex; flex-direction: column; gap: 1rem; }
+.credTop { display: flex; align-items: center; gap: 0.75rem; }
+.credIcon { font-size: 2rem; }
+.credInfo { flex: 1; }
+.credName { font-weight: 700; }
+.credLevel { font-size: 0.78rem; color: #6b7280; text-transform: capitalize; }
+
+.txInfo { background: #0b0f1a; border-radius: 8px; padding: 0.75rem 1rem; }
+.txLabel { font-size: 0.72rem; color: #6b7280; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.txHash { font-family: monospace; font-size: 0.78rem; color: #6366f1; word-break: break-all; }
+
+.credFooter { display: flex; justify-content: space-between; align-items: center; }
+.credDate { font-size: 0.8rem; color: #6b7280; }
+
+.assessmentList { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.aCard { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; }
+.aLeft { display: flex; align-items: center; gap: 1rem; }
+.aSkill { font-weight: 600; font-size: 0.9rem; }
+.aDate { font-size: 0.78rem; color: #6b7280; }
+.aRight { display: flex; align-items: center; gap: 0.75rem; }
+.aScore { font-size: 1.25rem; font-weight: 800; }
+
+.empty { text-align: center; padding: 2rem; color: #6b7280; }
