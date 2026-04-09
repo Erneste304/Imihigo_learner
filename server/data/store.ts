@@ -278,6 +278,47 @@ export interface InternationalCertificate {
   paymentStatus: 'paid' | 'pending' | 'free'
 }
 
+export interface CourseLesson {
+  id: string
+  courseId: string
+  title: string
+  type: 'note' | 'video'
+  content?: string
+  videoUrl?: string
+  order: number
+  duration?: number
+  createdAt: string
+}
+
+export interface CourseEnrollment {
+  id: string
+  userId: string
+  courseId: string
+  enrolledAt: string
+  completedLessons: string[]
+  completed: boolean
+  completedAt?: string
+  certificateId?: string
+  paid: boolean
+}
+
+export interface InstructorRequest {
+  id: string
+  userId: string
+  name: string
+  email: string
+  qualification: string
+  institution: string
+  specialties: string[]
+  bio: string
+  portfolioUrl?: string
+  yearsExperience: number
+  status: 'pending' | 'approved' | 'rejected'
+  submittedAt: string
+  reviewedAt?: string
+  reviewNote?: string
+}
+
 export interface Course {
   id: string
   title: string
@@ -288,6 +329,14 @@ export interface Course {
   enrolledCount: number
   createdAt: string
   active?: boolean
+  status: 'draft' | 'pending_approval' | 'approved' | 'rejected'
+  category?: string
+  level?: 'beginner' | 'intermediate' | 'advanced'
+  thumbnail?: string
+  tags?: string[]
+  approvalNote?: string
+  lessons?: CourseLesson[]
+  platformFeePercent?: number
 }
 
 export interface AdminSetting {
@@ -439,7 +488,45 @@ const groupDiscussions: GroupDiscussion[] = []
 const internationalCertificates: InternationalCertificate[] = []
 const apiKeys: APIKey[] = []
 const courses: Course[] = [
-  { id: 'co1', title: 'React Mastery', instructorId: 'u1', description: 'Advanced React patterns and performance.', price: 50, certificateFee: 20, enrolledCount: 124, createdAt: new Date().toISOString() }
+  {
+    id: 'co1',
+    title: 'React Mastery',
+    instructorId: 'u1',
+    description: 'Advanced React patterns, hooks, performance optimization and real-world project building.',
+    price: 50,
+    certificateFee: 20,
+    enrolledCount: 124,
+    createdAt: new Date().toISOString(),
+    active: true,
+    status: 'approved',
+    category: 'Frontend',
+    level: 'intermediate',
+    tags: ['React', 'JavaScript', 'Hooks', 'Performance'],
+    lessons: [
+      { id: 'l1', courseId: 'co1', title: 'Introduction to React Hooks', type: 'note', content: '<h2>Welcome to React Hooks</h2><p>React Hooks were introduced in React 16.8 and allow you to use state and other React features without writing a class component.</p><h3>Key Hooks</h3><ul><li><strong>useState</strong> — Add state to functional components</li><li><strong>useEffect</strong> — Perform side effects</li><li><strong>useContext</strong> — Access context values</li><li><strong>useRef</strong> — Reference DOM elements or persist values</li></ul><p>In this lesson, we will explore each hook with practical examples.</p>', order: 1, duration: 15, createdAt: new Date().toISOString() },
+      { id: 'l2', courseId: 'co1', title: 'useState Deep Dive', type: 'video', videoUrl: 'https://www.youtube.com/embed/O6P86uwfdR0', content: '<p>In this video lesson we cover useState in depth — including functional updates, lazy initialisation, and complex state objects.</p>', order: 2, duration: 22, createdAt: new Date().toISOString() },
+      { id: 'l3', courseId: 'co1', title: 'useEffect & Lifecycle', type: 'note', content: '<h2>useEffect Hook</h2><p>useEffect lets you perform side effects in function components. Think of it as componentDidMount, componentDidUpdate, and componentWillUnmount combined.</p><h3>Syntax</h3><pre>useEffect(() =&gt; {\n  // effect\n  return () =&gt; {\n    // cleanup\n  }\n}, [dependencies])</pre><h3>Common Use Cases</h3><ul><li>Fetching data from an API</li><li>Setting up event listeners</li><li>Updating the document title</li><li>Subscribing to services</li></ul>', order: 3, duration: 18, createdAt: new Date().toISOString() },
+    ]
+  }
+]
+
+const instructorRequests: InstructorRequest[] = [
+  {
+    id: 'ir1',
+    userId: 'u1',
+    name: 'Alice Uwimana',
+    email: 'alice@example.com',
+    qualification: 'Bachelor of Computer Science',
+    institution: 'University of Rwanda',
+    specialties: ['React', 'Node.js', 'TypeScript'],
+    bio: 'Senior Full Stack Developer with 5+ years of experience in building scalable web applications.',
+    portfolioUrl: 'https://github.com/alice',
+    yearsExperience: 5,
+    status: 'approved',
+    submittedAt: new Date(Date.now() - 7 * 86400000).toISOString(),
+    reviewedAt: new Date().toISOString(),
+    reviewNote: 'Excellent qualifications. Approved to teach on the platform.'
+  }
 ]
 
 const defaultDb = { 
@@ -462,16 +549,33 @@ const defaultDb = {
   apiKeys,
   jobApplications: [] as JobApplication[],
   activities: [] as any[],
-  gamificationProfiles: [] as GamificationProfile[]
+  gamificationProfiles: [] as GamificationProfile[],
+  enrollments: [] as CourseEnrollment[],
+  instructorRequests,
 }
 
 export let db = defaultDb
 
-// Initialize from file if exists
+// Initialize from file if exists, merging new fields
 if (fs.existsSync(DB_FILE)) {
   try {
     const data = fs.readFileSync(DB_FILE, 'utf-8')
-    db = JSON.parse(data)
+    const saved = JSON.parse(data)
+    db = {
+      ...defaultDb,
+      ...saved,
+      enrollments: saved.enrollments || [],
+      instructorRequests: saved.instructorRequests || instructorRequests,
+      courses: (saved.courses || courses).map((c: any) => ({
+        status: 'approved',
+        lessons: [],
+        ...c,
+      })),
+      jobs: (saved.jobs || jobs).map((j: any) => ({
+        status: 'approved',
+        ...j,
+      })),
+    }
     console.log('✅ Mock Database loaded from persistence.')
   } catch (e) {
     console.error('❌ Failed to load persistence, using defaults.')

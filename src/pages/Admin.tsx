@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 import styles from './Admin.module.css'
-import { Users, BookOpen, Briefcase, DollarSign, CheckCircle, Activity, Shield, Video, Trash2, ToggleLeft, ToggleRight, Star, FileText } from 'lucide-react'
+import { Users, BookOpen, Briefcase, DollarSign, CheckCircle, Activity, Shield, Video, Trash2, ToggleLeft, ToggleRight, Star, FileText, Plus, Edit2, X, GraduationCap, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { io as connectSocket } from 'socket.io-client'
 
@@ -21,17 +21,19 @@ interface Stats {
   activeCourses: number
 }
 
-type Tab = 'overview' | 'users' | 'courses' | 'tutorials' | 'jobs' | 'verifications' | 'terms' | 'settings'
+type Tab = 'overview' | 'users' | 'courses' | 'instructor-approvals' | 'course-approvals' | 'tutorials' | 'jobs' | 'verifications' | 'terms' | 'settings'
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: 'overview',      label: 'Overview',      icon: <Activity size={15} /> },
-  { id: 'users',         label: 'Users',          icon: <Users size={15} /> },
-  { id: 'courses',       label: 'Courses',        icon: <BookOpen size={15} /> },
-  { id: 'tutorials',     label: 'Tutorials',      icon: <Video size={15} /> },
-  { id: 'jobs',          label: 'Jobs',           icon: <Briefcase size={15} /> },
-  { id: 'verifications', label: 'Verifications',  icon: <CheckCircle size={15} /> },
-  { id: 'terms',         label: 'T&C Compliance', icon: <FileText size={15} /> },
-  { id: 'settings',      label: 'Settings',       icon: <DollarSign size={15} /> },
+  { id: 'overview',             label: 'Overview',            icon: <Activity size={15} /> },
+  { id: 'users',                label: 'Users',               icon: <Users size={15} /> },
+  { id: 'courses',              label: 'Courses',             icon: <BookOpen size={15} /> },
+  { id: 'instructor-approvals', label: 'Instructors',         icon: <GraduationCap size={15} /> },
+  { id: 'course-approvals',     label: 'Course Queue',        icon: <Clock size={15} /> },
+  { id: 'tutorials',            label: 'Tutorials',           icon: <Video size={15} /> },
+  { id: 'jobs',                 label: 'Jobs',                icon: <Briefcase size={15} /> },
+  { id: 'verifications',        label: 'Verifications',       icon: <CheckCircle size={15} /> },
+  { id: 'terms',                label: 'T&C Compliance',      icon: <FileText size={15} /> },
+  { id: 'settings',             label: 'Settings',            icon: <DollarSign size={15} /> },
 ]
 
 const roleColor: Record<string, string> = {
@@ -67,10 +69,20 @@ export default function Admin() {
   const [tcUsers, setTcUsers] = useState<any[]>([])
   const [tcStats, setTcStats] = useState<any>(null)
   const [tcFilter, setTcFilter] = useState<'all' | 'accepted' | 'pending'>('all')
+  const [instructorRequests, setInstructorRequests] = useState<any[]>([])
+  const [courseApprovals, setCourseApprovals] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
   const feedRef = useRef<HTMLDivElement>(null)
+
+  const [showCourseModal, setShowCourseModal] = useState(false)
+  const [editingCourse, setEditingCourse] = useState<any>(null)
+  const [courseForm, setCourseForm] = useState({ title: '', description: '', price: '0', certificateFee: '0', category: 'General', level: 'beginner', tags: '' })
+
+  const [showJobModal, setShowJobModal] = useState(false)
+  const [editingJob, setEditingJob] = useState<any>(null)
+  const [jobForm, setJobForm] = useState({ title: '', company: '', location: 'Kigali, Rwanda', type: 'full-time', salary: '', description: '' })
 
   useEffect(() => {
     if (!token) return
@@ -84,7 +96,9 @@ export default function Admin() {
       api.get('/admin/settings'),
       api.get('/admin/activities'),
       api.get('/admin/terms-compliance'),
-    ]).then(([st, us, co, tu, jo, ve, se, ac, tc]) => {
+      api.get('/admin/instructor-requests'),
+      api.get('/admin/course-approvals'),
+    ]).then(([st, us, co, tu, jo, ve, se, ac, tc, ir, ca]) => {
       if (st.data.success) setStats(st.data.data)
       if (us.data.success) setUsers(us.data.data)
       if (co.data.success) setCourses(co.data.data)
@@ -94,6 +108,8 @@ export default function Admin() {
       if (se.data.success) setSettings(se.data.data)
       if (ac.data.success) setActivityFeed(ac.data.data)
       if (tc.data.success) { setTcUsers(tc.data.data); setTcStats(tc.data.stats) }
+      if (ir.data.success) setInstructorRequests(ir.data.data)
+      if (ca.data.success) setCourseApprovals(ca.data.data)
     }).catch(console.error).finally(() => setLoading(false))
   }, [token])
 
@@ -167,6 +183,91 @@ export default function Admin() {
   async function tcMarkAccepted(userId: string) {
     const res = await api.put(`/admin/users/${userId}/tc-accept`, {})
     if (res.data.success) setTcUsers(ts => ts.map(u => u.id === userId ? { ...u, tcAccepted: true, tcAcceptedAt: new Date().toISOString() } : u))
+  }
+
+  async function approveInstructor(id: string) {
+    const note = prompt('Approval note (optional):') || ''
+    const res = await api.put(`/admin/instructor-requests/${id}/approve`, { note })
+    if (res.data.success) setInstructorRequests(rs => rs.map(r => r.id === id ? { ...r, status: 'approved', reviewedAt: new Date().toISOString(), reviewNote: note } : r))
+  }
+
+  async function rejectInstructor(id: string) {
+    const note = prompt('Rejection reason:') || 'Not approved at this time.'
+    const res = await api.put(`/admin/instructor-requests/${id}/reject`, { note })
+    if (res.data.success) setInstructorRequests(rs => rs.map(r => r.id === id ? { ...r, status: 'rejected', reviewedAt: new Date().toISOString(), reviewNote: note } : r))
+  }
+
+  async function approveCourse(id: string) {
+    const note = prompt('Approval note (optional):') || ''
+    const res = await api.put(`/admin/course-approvals/${id}/approve`, { note })
+    if (res.data.success) setCourseApprovals(cs => cs.filter(c => c.id !== id))
+  }
+
+  async function rejectCourse(id: string) {
+    const note = prompt('Rejection reason:') || 'Please revise and resubmit.'
+    const res = await api.put(`/admin/course-approvals/${id}/reject`, { note })
+    if (res.data.success) setCourseApprovals(cs => cs.filter(c => c.id !== id))
+  }
+
+  async function deleteCourse(id: string) {
+    if (!confirm('Permanently delete this course?')) return
+    const res = await api.delete(`/admin/courses/${id}`)
+    if (res.data.success) setCourses(cs => cs.filter(c => c.id !== id))
+  }
+
+  async function saveCourse() {
+    const payload = { ...courseForm, price: Number(courseForm.price), certificateFee: Number(courseForm.certificateFee), tags: courseForm.tags.split(',').map(t => t.trim()).filter(Boolean) }
+    if (editingCourse) {
+      const res = await api.put(`/admin/courses/${editingCourse.id}`, payload)
+      if (res.data.success) { setCourses(cs => cs.map(c => c.id === editingCourse.id ? res.data.data : c)); setShowCourseModal(false) }
+    } else {
+      const res = await api.post('/admin/courses', payload)
+      if (res.data.success) { setCourses(cs => [res.data.data, ...cs]); setShowCourseModal(false) }
+    }
+  }
+
+  function openCreateCourse() {
+    setEditingCourse(null)
+    setCourseForm({ title: '', description: '', price: '0', certificateFee: '0', category: 'General', level: 'beginner', tags: '' })
+    setShowCourseModal(true)
+  }
+
+  function openEditCourse(c: any) {
+    setEditingCourse(c)
+    setCourseForm({ title: c.title, description: c.description || '', price: String(c.price), certificateFee: String(c.certificateFee || 0), category: c.category || 'General', level: c.level || 'beginner', tags: (c.tags || []).join(', ') })
+    setShowCourseModal(true)
+  }
+
+  async function saveJob() {
+    if (editingJob) {
+      const res = await api.put(`/admin/jobs/${editingJob.id}`, jobForm)
+      if (res.data.success) { setJobs(js => js.map(j => j.id === editingJob.id ? res.data.data : j)); setShowJobModal(false) }
+    } else {
+      const res = await api.post('/admin/jobs', jobForm)
+      if (res.data.success) { setJobs(js => [res.data.data, ...js]); setShowJobModal(false) }
+    }
+  }
+
+  function openCreateJob() {
+    setEditingJob(null)
+    setJobForm({ title: '', company: '', location: 'Kigali, Rwanda', type: 'full-time', salary: '', description: '' })
+    setShowJobModal(true)
+  }
+
+  function openEditJob(j: any) {
+    setEditingJob(j)
+    setJobForm({ title: j.title, company: j.company, location: j.location || 'Kigali, Rwanda', type: j.type || 'full-time', salary: j.salary || '', description: j.description || '' })
+    setShowJobModal(true)
+  }
+
+  async function approveVerification(id: string) {
+    await api.put(`/admin/verifications/${id}/approve`, {})
+    setVerifications(vs => vs.map(v => v.id === id ? { ...v, status: 'approved' } : v))
+  }
+
+  async function rejectVerification(id: string) {
+    await api.put(`/admin/verifications/${id}/reject`, {})
+    setVerifications(vs => vs.map(v => v.id === id ? { ...v, status: 'rejected' } : v))
   }
 
   if (loading) return <div className="page" style={{ display:'flex', justifyContent:'center', alignItems:'center' }}><div className="spinner" /></div>
@@ -366,29 +467,40 @@ export default function Admin() {
           <div className={styles.panelCard}>
             <div className={styles.panelHeader}>
               <h2 className={styles.panelTitle}><BookOpen size={20} /> Course Management</h2>
-              <span className={styles.countBadge}>{courses.length} total</span>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <span className={styles.countBadge}>{courses.length} total</span>
+                <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={openCreateCourse}>
+                  <Plus size={14} /> New Course
+                </button>
+              </div>
             </div>
             <div className={styles.tableWrap}>
               <table className={styles.table}>
-                <thead><tr><th>Course</th><th>Instructor</th><th>Enrolled</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Course</th><th>Instructor</th><th>Category</th><th>Enrolled</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody>
                   {courses.map(c => (
                     <tr key={c.id} style={{ opacity: c.active ? 1 : 0.55 }}>
                       <td>
                         <div className={styles.userName}>{c.title}</div>
-                        <div className={styles.userEmail}>{c.description?.slice(0, 50)}…</div>
+                        <div className={styles.userEmail}>{c.description?.slice(0, 50)}{c.description?.length > 50 ? '…' : ''}</div>
                       </td>
                       <td className={styles.dateCell}>{c.instructorName}</td>
+                      <td className={styles.dateCell}>{c.category || '—'}</td>
                       <td className={styles.dateCell}>{c.enrolledCount}</td>
-                      <td className={styles.dateCell}>${c.price}</td>
-                      <td><StatusPill active={c.active} /></td>
+                      <td className={styles.dateCell}>RWF {c.price?.toLocaleString()}</td>
+                      <td><StatusPill active={!!c.active} /></td>
                       <td>
-                        <button
-                          className={`${styles.actionBtn} ${c.active ? styles.actionBtnAmber : styles.actionBtnGreen}`}
-                          onClick={() => toggleCourse(c.id)}
-                        >
-                          {c.active ? <><ToggleLeft size={14} /> Deactivate</> : <><ToggleRight size={14} /> Activate</>}
-                        </button>
+                        <div className={styles.actionBtns}>
+                          <button className={`${styles.actionBtn} ${c.active ? styles.actionBtnAmber : styles.actionBtnGreen}`} onClick={() => toggleCourse(c.id)}>
+                            {c.active ? <><ToggleLeft size={14} /> Off</> : <><ToggleRight size={14} /> On</>}
+                          </button>
+                          <button className={`${styles.actionBtn}`} onClick={() => openEditCourse(c)} style={{ background: 'rgba(99,102,241,0.1)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.3)' }}>
+                            <Edit2 size={13} /> Edit
+                          </button>
+                          <button className={`${styles.actionBtn} ${styles.actionBtnRed}`} onClick={() => deleteCourse(c.id)}>
+                            <Trash2 size={13} /> Del
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -447,7 +559,12 @@ export default function Admin() {
           <div className={styles.panelCard}>
             <div className={styles.panelHeader}>
               <h2 className={styles.panelTitle}><Briefcase size={20} /> Job Listing Management</h2>
-              <span className={styles.countBadge}>{jobs.length} total</span>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <span className={styles.countBadge}>{jobs.length} total</span>
+                <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={openCreateJob}>
+                  <Plus size={14} /> New Job
+                </button>
+              </div>
             </div>
             <div className={styles.tableWrap}>
               <table className={styles.table}>
@@ -461,18 +578,18 @@ export default function Admin() {
                       </td>
                       <td className={styles.dateCell}>{j.company}</td>
                       <td className={styles.dateCell}><span className="badge badge-gray">{j.type}</span></td>
-                      <td className={styles.dateCell}>{j.applications}</td>
-                      <td><StatusPill active={j.active} /></td>
+                      <td className={styles.dateCell}>{j.applications ?? 0}</td>
+                      <td><StatusPill active={!!j.active} /></td>
                       <td>
                         <div className={styles.actionBtns}>
-                          <button
-                            className={`${styles.actionBtn} ${j.active ? styles.actionBtnAmber : styles.actionBtnGreen}`}
-                            onClick={() => toggleJob(j.id)}
-                          >
-                            {j.active ? <><ToggleLeft size={14} /> Deactivate</> : <><ToggleRight size={14} /> Activate</>}
+                          <button className={`${styles.actionBtn} ${j.active ? styles.actionBtnAmber : styles.actionBtnGreen}`} onClick={() => toggleJob(j.id)}>
+                            {j.active ? <><ToggleLeft size={14} /> Off</> : <><ToggleRight size={14} /> On</>}
+                          </button>
+                          <button className={`${styles.actionBtn}`} onClick={() => openEditJob(j)} style={{ background: 'rgba(99,102,241,0.1)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.3)' }}>
+                            <Edit2 size={13} /> Edit
                           </button>
                           <button className={`${styles.actionBtn} ${styles.actionBtnRed}`} onClick={() => deleteJob(j.id)}>
-                            <Trash2 size={14} /> Delete
+                            <Trash2 size={13} /> Del
                           </button>
                         </div>
                       </td>
@@ -482,6 +599,70 @@ export default function Admin() {
               </table>
               {jobs.length === 0 && <div className={styles.emptyRow}>No jobs found.</div>}
             </div>
+          </div>
+        )}
+
+        {/* ── INSTRUCTOR APPROVALS ── */}
+        {activeTab === 'instructor-approvals' && (
+          <div className={styles.panelCard}>
+            <div className={styles.panelHeader}>
+              <h2 className={styles.panelTitle}><GraduationCap size={20} /> Instructor Applications</h2>
+              <span className={styles.countBadge}>{instructorRequests.filter(r => r.status === 'pending').length} pending</span>
+            </div>
+            {instructorRequests.length === 0 ? (
+              <div className={styles.emptyRow}>No instructor applications yet.</div>
+            ) : instructorRequests.map(r => (
+              <div key={r.id} className={styles.verifyRow} style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div>
+                    <div className={styles.userName}>{r.name} <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: '0.82rem' }}>({r.email})</span></div>
+                    <div className={styles.userEmail}>{r.qualification} · {r.institution} · {r.yearsExperience} yrs exp</div>
+                    <div className={styles.userEmail} style={{ marginTop: '0.25rem' }}>Specialties: {(r.specialties || []).join(', ')}</div>
+                    {r.portfolioUrl && <a href={r.portfolioUrl} target="_blank" rel="noopener" style={{ fontSize: '0.75rem', color: '#818cf8' }}>{r.portfolioUrl}</a>}
+                    {r.reviewNote && <div className={styles.userEmail} style={{ marginTop: '0.25rem', color: r.status === 'approved' ? '#10b981' : r.status === 'rejected' ? '#ef4444' : '#f59e0b' }}>Note: {r.reviewNote}</div>}
+                  </div>
+                  <div className={styles.actionBtns} style={{ alignSelf: 'flex-start' }}>
+                    <span className={styles.pendingBadge} style={{ background: r.status === 'approved' ? 'rgba(16,185,129,0.15)' : r.status === 'rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)', color: r.status === 'approved' ? '#10b981' : r.status === 'rejected' ? '#ef4444' : '#f59e0b' }}>
+                      {r.status === 'approved' ? '✓ Approved' : r.status === 'rejected' ? '✕ Rejected' : '⏳ Pending'}
+                    </span>
+                    {r.status === 'pending' && <>
+                      <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={() => approveInstructor(r.id)}>✓ Approve</button>
+                      <button className={`${styles.actionBtn} ${styles.actionBtnRed}`} onClick={() => rejectInstructor(r.id)}>✕ Reject</button>
+                    </>}
+                  </div>
+                </div>
+                {r.bio && <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.5 }}>{r.bio}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── COURSE APPROVAL QUEUE ── */}
+        {activeTab === 'course-approvals' && (
+          <div className={styles.panelCard}>
+            <div className={styles.panelHeader}>
+              <h2 className={styles.panelTitle}><Clock size={20} /> Course Approval Queue</h2>
+              <span className={styles.countBadge}>{courseApprovals.length} pending</span>
+            </div>
+            {courseApprovals.length === 0 ? (
+              <div className={styles.emptyRow}>No courses pending approval.</div>
+            ) : courseApprovals.map(c => (
+              <div key={c.id} className={styles.verifyRow} style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div>
+                    <div className={styles.userName}>{c.title}</div>
+                    <div className={styles.userEmail}>by {c.instructorName} ({c.instructorEmail}) · {c.category} · {c.level} · RWF {c.price?.toLocaleString()}</div>
+                    <div className={styles.userEmail}>{(c.lessons || []).length} lessons · submitted {new Date(c.createdAt).toLocaleDateString()}</div>
+                  </div>
+                  <div className={styles.actionBtns} style={{ alignSelf: 'flex-start' }}>
+                    <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={() => approveCourse(c.id)}>✓ Approve</button>
+                    <button className={`${styles.actionBtn} ${styles.actionBtnRed}`} onClick={() => rejectCourse(c.id)}>✕ Reject</button>
+                  </div>
+                </div>
+                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0 }}>{c.description}</p>
+                {c.tags?.length > 0 && <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>{c.tags.map((t: string) => <span key={t} style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: '100px', background: 'rgba(99,102,241,0.1)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>{t}</span>)}</div>}
+              </div>
+            ))}
           </div>
         )}
 
@@ -500,9 +681,13 @@ export default function Admin() {
                   <div className={styles.userEmail}>Skill: {v.skill} · {new Date(v.submittedAt).toLocaleDateString()}</div>
                 </div>
                 <div className={styles.actionBtns}>
-                  <span className={styles.pendingBadge}>⏳ {v.status}</span>
-                  <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`}>✓ Approve</button>
-                  <button className={`${styles.actionBtn} ${styles.actionBtnRed}`}>✕ Reject</button>
+                  <span className={styles.pendingBadge} style={{ background: v.status === 'approved' ? 'rgba(16,185,129,0.15)' : v.status === 'rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)', color: v.status === 'approved' ? '#10b981' : v.status === 'rejected' ? '#ef4444' : '#f59e0b' }}>
+                    {v.status === 'approved' ? '✓ Approved' : v.status === 'rejected' ? '✕ Rejected' : '⏳ Pending'}
+                  </span>
+                  {v.status === 'pending' && <>
+                    <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={() => approveVerification(v.id)}>✓ Approve</button>
+                    <button className={`${styles.actionBtn} ${styles.actionBtnRed}`} onClick={() => rejectVerification(v.id)}>✕ Reject</button>
+                  </>}
                 </div>
               </div>
             ))}
@@ -680,6 +865,89 @@ export default function Admin() {
         )}
 
       </div>
+
+      {/* ── COURSE MODAL ── */}
+      {showCourseModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={e => e.target === e.currentTarget && setShowCourseModal(false)}>
+          <div style={{ background: 'var(--bg-card, #1e2235)', borderRadius: '1.5rem', padding: '2rem', width: '100%', maxWidth: '560px', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem' }}>{editingCourse ? 'Edit Course' : 'Create New Course'}</h3>
+              <button onClick={() => setShowCourseModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+            </div>
+            {[
+              { label: 'Title', key: 'title', type: 'text' },
+              { label: 'Description', key: 'description', type: 'textarea' },
+              { label: 'Price (RWF)', key: 'price', type: 'number' },
+              { label: 'Certificate Fee (RWF)', key: 'certificateFee', type: 'number' },
+              { label: 'Category', key: 'category', type: 'text' },
+              { label: 'Tags (comma-separated)', key: 'tags', type: 'text' },
+            ].map(f => (
+              <div key={f.key} style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{f.label}</label>
+                {f.type === 'textarea' ? (
+                  <textarea rows={3} value={(courseForm as any)[f.key]} onChange={e => setCourseForm(p => ({ ...p, [f.key]: e.target.value }))} className={styles.searchInput} style={{ width: '100%', resize: 'vertical' }} />
+                ) : (
+                  <input type={f.type} value={(courseForm as any)[f.key]} onChange={e => setCourseForm(p => ({ ...p, [f.key]: e.target.value }))} className={styles.searchInput} style={{ width: '100%' }} />
+                )}
+              </div>
+            ))}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Level</label>
+              <select value={courseForm.level} onChange={e => setCourseForm(p => ({ ...p, level: e.target.value }))} className={styles.filterSelect} style={{ width: '100%' }}>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button className={styles.actionBtn} onClick={() => setShowCourseModal(false)}>Cancel</button>
+              <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={saveCourse}>{editingCourse ? 'Save Changes' : 'Create Course'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── JOB MODAL ── */}
+      {showJobModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={e => e.target === e.currentTarget && setShowJobModal(false)}>
+          <div style={{ background: 'var(--bg-card, #1e2235)', borderRadius: '1.5rem', padding: '2rem', width: '100%', maxWidth: '560px', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem' }}>{editingJob ? 'Edit Job' : 'Create New Job'}</h3>
+              <button onClick={() => setShowJobModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+            </div>
+            {[
+              { label: 'Job Title', key: 'title', type: 'text' },
+              { label: 'Company', key: 'company', type: 'text' },
+              { label: 'Location', key: 'location', type: 'text' },
+              { label: 'Salary', key: 'salary', type: 'text' },
+              { label: 'Description', key: 'description', type: 'textarea' },
+            ].map(f => (
+              <div key={f.key} style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{f.label}</label>
+                {f.type === 'textarea' ? (
+                  <textarea rows={3} value={(jobForm as any)[f.key]} onChange={e => setJobForm(p => ({ ...p, [f.key]: e.target.value }))} className={styles.searchInput} style={{ width: '100%', resize: 'vertical' }} />
+                ) : (
+                  <input type={f.type} value={(jobForm as any)[f.key]} onChange={e => setJobForm(p => ({ ...p, [f.key]: e.target.value }))} className={styles.searchInput} style={{ width: '100%' }} />
+                )}
+              </div>
+            ))}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Job Type</label>
+              <select value={jobForm.type} onChange={e => setJobForm(p => ({ ...p, type: e.target.value }))} className={styles.filterSelect} style={{ width: '100%' }}>
+                <option value="full-time">Full-time</option>
+                <option value="part-time">Part-time</option>
+                <option value="contract">Contract</option>
+                <option value="internship">Internship</option>
+                <option value="remote">Remote</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button className={styles.actionBtn} onClick={() => setShowJobModal(false)}>Cancel</button>
+              <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={saveJob}>{editingJob ? 'Save Changes' : 'Create Job'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

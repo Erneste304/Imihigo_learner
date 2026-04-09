@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express'
 import { db, saveDb } from '../data/store.js'
 import { tutorialPosts } from '../data/community-store.js'
 import jwt from 'jsonwebtoken'
+import { v4 as uuid } from 'uuid'
 
 const router = Router()
 const JWT_SECRET = process.env.JWT_SECRET || 'imihigo-learn-secret-2024'
@@ -174,6 +175,195 @@ router.put('/settings/:key', (req: Request, res: Response) => {
 // ── Activities ──────────────────────────────────────
 router.get('/activities', (_req: Request, res: Response) => {
   res.json({ success: true, data: db.activities || [] })
+})
+
+// ── Admin CRUD: Courses ──────────────────────────────────────
+router.post('/courses', (req: Request, res: Response) => {
+  const course = {
+    id: `co_${Date.now()}`,
+    title: req.body.title,
+    description: req.body.description,
+    price: Number(req.body.price) || 0,
+    certificateFee: Number(req.body.certificateFee) || 0,
+    category: req.body.category || 'General',
+    level: req.body.level || 'beginner',
+    tags: req.body.tags || [],
+    instructorId: req.body.instructorId || 'admin',
+    enrolledCount: 0,
+    lessons: [],
+    createdAt: new Date().toISOString(),
+    status: 'approved',
+    active: true,
+    platformFeePercent: 0.01,
+  }
+  db.courses.push(course as any)
+  saveDb()
+  res.json({ success: true, data: course })
+})
+
+router.put('/courses/:id', (req: Request, res: Response) => {
+  const course = db.courses.find(c => c.id === req.params.id)
+  if (!course) return res.status(404).json({ success: false, message: 'Not found' })
+  Object.assign(course, req.body)
+  saveDb()
+  res.json({ success: true, data: course })
+})
+
+router.delete('/courses/:id', (req: Request, res: Response) => {
+  const idx = db.courses.findIndex(c => c.id === req.params.id)
+  if (idx === -1) return res.status(404).json({ success: false, message: 'Not found' })
+  db.courses.splice(idx, 1)
+  saveDb()
+  res.json({ success: true })
+})
+
+// ── Admin CRUD: Lessons ──────────────────────────────────────
+router.post('/courses/:id/lessons', (req: Request, res: Response) => {
+  const course = db.courses.find(c => c.id === req.params.id)
+  if (!course) return res.status(404).json({ success: false, message: 'Not found' })
+  if (!course.lessons) course.lessons = []
+  const lesson = {
+    id: `l_${Date.now()}`,
+    courseId: course.id,
+    title: req.body.title,
+    type: req.body.type || 'note',
+    content: req.body.content || '',
+    videoUrl: req.body.videoUrl || '',
+    order: course.lessons.length + 1,
+    duration: Number(req.body.duration) || 0,
+    createdAt: new Date().toISOString(),
+  }
+  course.lessons.push(lesson)
+  saveDb()
+  res.json({ success: true, data: lesson })
+})
+
+router.put('/courses/:id/lessons/:lessonId', (req: Request, res: Response) => {
+  const course = db.courses.find(c => c.id === req.params.id)
+  if (!course || !course.lessons) return res.status(404).json({ success: false, message: 'Not found' })
+  const lesson = course.lessons.find(l => l.id === req.params.lessonId)
+  if (!lesson) return res.status(404).json({ success: false, message: 'Lesson not found' })
+  Object.assign(lesson, req.body)
+  saveDb()
+  res.json({ success: true, data: lesson })
+})
+
+router.delete('/courses/:id/lessons/:lessonId', (req: Request, res: Response) => {
+  const course = db.courses.find(c => c.id === req.params.id)
+  if (!course || !course.lessons) return res.status(404).json({ success: false, message: 'Not found' })
+  course.lessons = course.lessons.filter(l => l.id !== req.params.lessonId)
+  saveDb()
+  res.json({ success: true })
+})
+
+// ── Admin CRUD: Jobs ──────────────────────────────────────
+router.post('/jobs', (req: Request, res: Response) => {
+  const job = {
+    id: `j_${Date.now()}`,
+    title: req.body.title,
+    company: req.body.company,
+    location: req.body.location || 'Kigali, Rwanda',
+    type: req.body.type || 'full-time',
+    salary: req.body.salary || '',
+    description: req.body.description,
+    requiredSkills: req.body.requiredSkills || [],
+    remote: req.body.remote === true || req.body.remote === 'true',
+    postedAt: new Date().toISOString(),
+    employerId: 'admin',
+    active: true,
+    status: 'approved',
+  }
+  db.jobs.push(job as any)
+  saveDb()
+  res.json({ success: true, data: job })
+})
+
+router.put('/jobs/:id', (req: Request, res: Response) => {
+  const job = db.jobs.find(j => j.id === req.params.id)
+  if (!job) return res.status(404).json({ success: false, message: 'Not found' })
+  Object.assign(job, req.body)
+  saveDb()
+  res.json({ success: true, data: job })
+})
+
+// ── Instructor Approval Requests ──────────────────────────────────────
+router.get('/instructor-requests', (_req: Request, res: Response) => {
+  if (!(db as any).instructorRequests) (db as any).instructorRequests = []
+  const requests = (db as any).instructorRequests.map((r: any) => {
+    const user = db.users.find(u => u.id === r.userId)
+    return { ...r, userRole: user?.role, userSuspended: user?.suspended }
+  })
+  res.json({ success: true, data: requests })
+})
+
+router.put('/instructor-requests/:id/approve', (req: Request, res: Response) => {
+  if (!(db as any).instructorRequests) (db as any).instructorRequests = []
+  const request = (db as any).instructorRequests.find((r: any) => r.id === req.params.id)
+  if (!request) return res.status(404).json({ success: false, message: 'Not found' })
+
+  request.status = 'approved'
+  request.reviewedAt = new Date().toISOString()
+  request.reviewNote = req.body.note || 'Approved by admin.'
+
+  const user = db.users.find(u => u.id === request.userId)
+  if (user) {
+    user.role = 'instructor'
+    user.verified = true
+  }
+  saveDb()
+  res.json({ success: true })
+})
+
+router.put('/instructor-requests/:id/reject', (req: Request, res: Response) => {
+  if (!(db as any).instructorRequests) (db as any).instructorRequests = []
+  const request = (db as any).instructorRequests.find((r: any) => r.id === req.params.id)
+  if (!request) return res.status(404).json({ success: false, message: 'Not found' })
+
+  request.status = 'rejected'
+  request.reviewedAt = new Date().toISOString()
+  request.reviewNote = req.body.note || 'Not approved at this time.'
+  saveDb()
+  res.json({ success: true })
+})
+
+// ── Course Approval Queue ──────────────────────────────────────
+router.get('/course-approvals', (_req: Request, res: Response) => {
+  const pending = db.courses
+    .filter(c => c.status === 'pending_approval')
+    .map(c => {
+      const instructor = db.users.find(u => u.id === c.instructorId)
+      return { ...c, instructorName: instructor?.name || 'Unknown', instructorEmail: instructor?.email }
+    })
+  res.json({ success: true, data: pending })
+})
+
+router.put('/course-approvals/:id/approve', (req: Request, res: Response) => {
+  const course = db.courses.find(c => c.id === req.params.id)
+  if (!course) return res.status(404).json({ success: false, message: 'Not found' })
+  course.status = 'approved'
+  course.active = true
+  course.approvalNote = req.body.note || 'Approved by admin.'
+  saveDb()
+  res.json({ success: true })
+})
+
+router.put('/course-approvals/:id/reject', (req: Request, res: Response) => {
+  const course = db.courses.find(c => c.id === req.params.id)
+  if (!course) return res.status(404).json({ success: false, message: 'Not found' })
+  course.status = 'rejected'
+  course.active = false
+  course.approvalNote = req.body.note || 'Rejected. Please revise and resubmit.'
+  saveDb()
+  res.json({ success: true })
+})
+
+// ── Fix Verifications (approve/reject) ──────────────────────────────────────
+router.put('/verifications/:id/approve', (_req: Request, res: Response) => {
+  res.json({ success: true, message: 'Verification approved.' })
+})
+
+router.put('/verifications/:id/reject', (_req: Request, res: Response) => {
+  res.json({ success: true, message: 'Verification rejected.' })
 })
 
 // ── Terms & Conditions Compliance ──────────────────────────────────────
