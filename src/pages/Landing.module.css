@@ -74,18 +74,27 @@
 .step h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
 .step p { color: #9ca3af; font-size: 0.88rem; line-height: 1.6; }
 
+/* ── Roadmap ── */
 .roadmap { padding: 5rem 0; }
 
-.phases { display: flex; flex-direction: column; gap: 1rem; max-width: 700px; margin: 0 auto; }
+.phases { display: flex; flex-direction: column; gap: 1rem; max-width: 760px; margin: 0 auto; }
 
 .phaseItem {
-  display: flex; align-items: flex-start; gap: 1rem;
   background: #111827; border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 12px; padding: 1.25rem 1.5rem;
-  transition: border-color 0.2s;
+  border-radius: 14px; overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.phaseActive { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.06); }
+.phaseItem:hover { border-color: rgba(99,102,241,0.3); }
+
+.phaseActive { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.05); }
+.phaseOpen { border-color: rgba(99,102,241,0.6); box-shadow: 0 0 20px rgba(99,102,241,0.1); }
+
+.phaseClickable {
+  display: flex; align-items: flex-start; gap: 1rem;
+  padding: 1.25rem 1.5rem; cursor: pointer;
+  user-select: none;
+}
 
 .phaseDot {
   width: 10px; height: 10px; border-radius: 50%;
@@ -93,10 +102,156 @@
 }
 .phaseActive .phaseDot { background: #6366f1; box-shadow: 0 0 8px #6366f1; }
 
-.phaseLabel { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.2rem; }
+.phaseLabel { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.2rem; }
 .phaseActive .phaseLabel { color: #a5b4fc; }
 .phaseDesc { color: #6b7280; font-size: 0.85rem; }
 
+.phaseHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.phaseToggle {
+  font-size: 1.5rem;
+  color: #a5b4fc;
+  font-weight: 300;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* Expanded content */
+.phaseDetails {
+  padding: 0 1.5rem 1.5rem;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.phaseItemsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.phaseItemWrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.phaseFeatureBtn {
+  display: flex; align-items: center; gap: 0.75rem;
+  width: 100%; padding: 0.75rem 1rem;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; cursor: pointer; text-align: left;
+  color: #e5e7eb; transition: background 0.15s, border-color 0.15s;
+}
+.phaseFeatureBtn:hover { background: rgba(99,102,241,0.08); border-color: rgba(99,102,241,0.3); }
+.phaseFeatureBtnActive { background: rgba(99,102,241,0.12); border-color: rgba(99,102,241,0.5); color: #c7d2fe; }
+
+.phaseFeatureIcon { font-size: 1.25rem; flex-shrink: 0; }
+.phaseFeatureLabel { flex: 1; font-size: 0.9rem; font-weight: 500; }
+.phaseFeatureChevron { font-size: 0.6rem; color: #6b7280; flex-shrink: 0; }
+
+/* Feature detail panel */
+.featureDetail {
+  margin-top: 0.35rem;
+  background: rgba(10,10,20,0.6);
+  border: 1px solid rgba(99,102,241,0.25);
+  border-radius: 10px;
+  padding: 1.25rem 1.25rem 1rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.featureDetailDesc {
+  font-size: 0.9rem; color: #9ca3af; line-height: 1.65; margin: 0 0 1rem;
+}
+
+.featureDetailValues {
+  list-style: none; padding: 0; margin: 0 0 1rem;
+  display: flex; flex-direction: column; gap: 0.45rem;
+}
+
+.featureDetailValues li {
+  display: flex; align-items: flex-start; gap: 0.6rem;
+  font-size: 0.88rem; color: #d1d5db; line-height: 1.5;
+}
+
+.featureDetailCheck {
+  color: #6366f1; font-size: 0.8rem; margin-top: 1px; flex-shrink: 0;
+}
+
+.featureDetailAction { margin-top: 0.5rem; }
+
+.featureDetailLink {
+  display: inline-block;
+  font-size: 0.85rem; font-weight: 600; color: #a5b4fc;
+  background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.3);
+  padding: 0.4rem 1rem; border-radius: 8px; text-decoration: none;
+  transition: background 0.15s;
+}
+.featureDetailLink:hover { background: rgba(99,102,241,0.22); }
+
+/* Certificate section */
+.featureCertSection {
+  margin-top: 1rem;
+  border-top: 1px dashed rgba(255,255,255,0.1);
+  padding-top: 1rem;
+}
+
+.featureCertTitle {
+  font-size: 0.85rem; font-weight: 700; color: #a5b4fc; margin-bottom: 0.75rem;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+
+.certList { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.certCard {
+  display: flex; align-items: center; gap: 0.75rem;
+  background: rgba(99,102,241,0.07); border: 1px solid rgba(99,102,241,0.2);
+  border-radius: 8px; padding: 0.75rem 1rem;
+}
+
+.certIcon { font-size: 1.5rem; flex-shrink: 0; }
+
+.certInfo { flex: 1; min-width: 0; }
+.certName { font-size: 0.88rem; font-weight: 600; color: #e5e7eb; margin-bottom: 0.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.certDate { font-size: 0.78rem; color: #6b7280; }
+.certScore { font-size: 0.78rem; color: #10b981; margin-top: 0.1rem; }
+
+.certDownload {
+  font-size: 0.8rem; font-weight: 600; color: #6366f1;
+  background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3);
+  padding: 0.3rem 0.7rem; border-radius: 6px; text-decoration: none;
+  white-space: nowrap; flex-shrink: 0; transition: background 0.15s;
+}
+.certDownload:hover { background: rgba(99,102,241,0.2); }
+
+.certLogin {
+  text-align: center; padding: 1.25rem 1rem;
+  background: rgba(255,255,255,0.02); border-radius: 8px;
+  border: 1px dashed rgba(255,255,255,0.1);
+}
+.certLoginIcon { font-size: 1.5rem; display: block; margin-bottom: 0.5rem; }
+.certLogin p { font-size: 0.88rem; color: #9ca3af; margin: 0 0 0.75rem; }
+
+.certLoginBtn {
+  display: inline-block; font-size: 0.85rem; font-weight: 600;
+  color: #fff; background: #6366f1; padding: 0.4rem 1.1rem;
+  border-radius: 8px; text-decoration: none; transition: background 0.15s;
+}
+.certLoginBtn:hover { background: #4f46e5; }
+
+.certLoading { font-size: 0.88rem; color: #6b7280; padding: 0.75rem 0; }
+.certError { font-size: 0.88rem; color: #f87171; padding: 0.5rem 0; }
+
+.certEmpty {
+  text-align: center; padding: 1rem;
+  font-size: 0.88rem; color: #6b7280;
+}
+.certEmpty span { font-size: 1.5rem; display: block; margin-bottom: 0.4rem; }
+.certEmpty p { margin: 0 0 0.75rem; }
+
+/* CTA */
 .cta { padding: 5rem 0; }
 
 .ctaCard {
@@ -107,44 +262,7 @@
 .ctaCard h2 { font-size: 2.25rem; font-weight: 800; margin-bottom: 0.75rem; }
 .ctaCard p { color: #9ca3af; margin-bottom: 2rem; font-size: 1rem; }
 
-.phaseHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.phaseToggle {
-  font-size: 1.5rem;
-  color: #a5b4fc;
-  font-weight: 300;
-  line-height: 1;
-}
-
-.phaseDetails {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px dashed rgba(255,255,255,0.1);
-  animation: fadeIn 0.3s ease-out;
-}
-
-.phaseDetails ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.phaseDetails li {
-  font-size: 0.9rem;
-  color: #d1d5db;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-5px); }
+  from { opacity: 0; transform: translateY(-6px); }
   to { opacity: 1; transform: translateY(0); }
 }
