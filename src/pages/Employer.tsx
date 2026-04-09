@@ -3,6 +3,23 @@ import { useAuth } from '../context/AuthContext'
 import { Job } from '../types'
 import styles from './Employer.module.css'
 
+interface Applicant {
+  id: string
+  applicantName: string
+  applicantEmail: string
+  skills: string[]
+  verifiedCredentials: string[]
+  status: string
+  appliedAt: string
+  pitch?: string
+}
+
+function formatDeadline(deadline: string | undefined | null) {
+  if (!deadline) return 'No deadline set'
+  const d = new Date(deadline)
+  return isNaN(d.getTime()) ? 'No deadline set' : d.toLocaleDateString()
+}
+
 export default function Employer() {
   const { user, token } = useAuth()
   const [jobs, setJobs] = useState<Job[]>([])
@@ -14,11 +31,31 @@ export default function Employer() {
   const [qrCode, setQrCode] = useState('')
   const [verifyResult, setVerifyResult] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [viewingJob, setViewingJob] = useState<Job | null>(null)
+  const [applicants, setApplicants] = useState<Applicant[]>([])
+  const [applicantsLoading, setApplicantsLoading] = useState(false)
   const [form, setForm] = useState({ title: '', company: user?.name || '', location: 'Kigali', type: 'full-time', salary: '', description: '', requiredSkills: '' })
 
   useEffect(() => {
     fetch('/api/jobs').then(r => r.json()).then(data => setJobs(Array.isArray(data) ? data : [])).finally(() => setLoading(false))
   }, [])
+
+  async function viewApplicants(job: Job) {
+    setViewingJob(job)
+    setApplicants([])
+    setApplicantsLoading(true)
+    try {
+      const res = await fetch(`/api/jobs/${job.id}/applicants`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const data = await res.json()
+      if (data.success) setApplicants(data.data)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setApplicantsLoading(false)
+    }
+  }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))
@@ -139,7 +176,7 @@ export default function Employer() {
         <div className={styles.quickStats}>
           {[
             { icon: '💼', label: 'Active Job Posts', value: jobs.length },
-            { icon: '👥', label: 'Total Applicants', value: jobs.reduce((s, j) => s + j.applications, 0) },
+            { icon: '👥', label: 'Total Applicants', value: jobs.reduce((s, j) => s + (j.applications ?? 0), 0) },
             { icon: '✅', label: 'Verifications Done', value: 3 },
             { icon: '⏱', label: 'Avg. Hiring Time', value: '6 days' },
           ].map(s => (
@@ -176,8 +213,10 @@ export default function Employer() {
                   {job.requiredSkills.map(s => <span key={s} className="tag">{s}</span>)}
                 </div>
                 <div className={styles.jobCardFooter}>
-                  <span className="text-muted" style={{ fontSize:'0.8rem' }}>Closes {new Date(job.deadline).toLocaleDateString()}</span>
-                  <button className="btn btn-secondary btn-sm">View Applicants</button>
+                  <span className="text-muted" style={{ fontSize:'0.8rem' }}>Closes {formatDeadline(job.deadline)}</span>
+                  <button className="btn btn-secondary btn-sm" onClick={() => viewApplicants(job)}>
+                    View Applicants {(job.applications ?? 0) > 0 && <span className={styles.appCount}>{job.applications}</span>}
+                  </button>
                 </div>
               </div>
             ))}
@@ -351,6 +390,55 @@ export default function Employer() {
           </div>
         )}
       </div>
+
+      {viewingJob && (
+        <div className={styles.modalOverlay} onClick={() => setViewingJob(null)}>
+          <div className={styles.modalPanel} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2 className={styles.modalTitle}>Applicants — {viewingJob.title}</h2>
+                <p className={styles.modalSub}>{viewingJob.company} · {viewingJob.location}</p>
+              </div>
+              <button className={styles.modalClose} onClick={() => setViewingJob(null)}>✕</button>
+            </div>
+
+            {applicantsLoading ? (
+              <div className={styles.modalLoading}><div className="spinner" /></div>
+            ) : applicants.length === 0 ? (
+              <div className={styles.modalEmpty}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📭</div>
+                <p>No applications received yet for this job.</p>
+              </div>
+            ) : (
+              <div className={styles.applicantList}>
+                {applicants.map(a => (
+                  <div key={a.id} className={styles.applicantCard}>
+                    <div className={styles.applicantAvatar}>
+                      {a.applicantName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </div>
+                    <div className={styles.applicantInfo}>
+                      <div className={styles.applicantName}>{a.applicantName}</div>
+                      <div className={styles.applicantEmail}>{a.applicantEmail}</div>
+                      {a.verifiedCredentials.length > 0 && (
+                        <div className={styles.applicantCreds}>
+                          {a.verifiedCredentials.map(c => (
+                            <span key={c} className={styles.credBadge}>✅ {c}</span>
+                          ))}
+                        </div>
+                      )}
+                      {a.pitch && <p className={styles.applicantPitch}>"{a.pitch}"</p>}
+                    </div>
+                    <div className={styles.applicantMeta}>
+                      <span className={`badge ${a.status === 'pending' ? 'badge-gray' : 'badge-primary'}`}>{a.status}</span>
+                      <span className={styles.applicantDate}>{new Date(a.appliedAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

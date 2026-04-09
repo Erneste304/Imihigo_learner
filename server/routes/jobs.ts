@@ -12,7 +12,29 @@ router.get('/', (_req, res: Response) => {
   if (type) jobs = jobs.filter(j => j.type === type)
   if (skill) jobs = jobs.filter(j => j.requiredSkills.some(s => s.toLowerCase().includes((skill as string).toLowerCase())))
   if (remote === 'true') jobs = jobs.filter(j => j.remote)
-  res.json(jobs.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime()))
+  const enriched = jobs.map(j => ({
+    ...j,
+    applications: db.jobApplications.filter(a => a.jobId === j.id).length
+  }))
+  res.json(enriched.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime()))
+})
+
+router.get('/:id/applicants', authenticate, (req: AuthRequest, res: Response) => {
+  const job = db.jobs.find(j => j.id === req.params.id)
+  if (!job) return res.status(404).json({ error: 'Job not found' })
+  const applications = db.jobApplications.filter(a => a.jobId === req.params.id)
+  const enriched = applications.map(a => {
+    const user = db.users.find(u => u.id === a.userId)
+    const credentials = db.credentials.filter(c => c.userId === a.userId && c.verified)
+    return {
+      ...a,
+      applicantName: user?.name || 'Unknown',
+      applicantEmail: user?.email || '',
+      skills: user?.skills || [],
+      verifiedCredentials: credentials.map(c => c.skillName),
+    }
+  })
+  res.json({ success: true, data: enriched })
 })
 
 router.get('/:id', (req, res: Response) => {
