@@ -13,6 +13,7 @@ export interface TutorialPost {
   tags: string[]
   createdAt: string
   thumbnailColor: string
+  videoUrl?: string
 }
 
 export interface LeaderboardEntry {

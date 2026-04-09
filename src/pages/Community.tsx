@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import styles from './Community.module.css'
@@ -17,9 +17,26 @@ interface Tutorial {
   tags: string[]
   createdAt: string
   thumbnailColor: string
+  videoUrl?: string
 }
 
 const categories = ['All', 'Programming', 'Frontend', 'Backend', 'Data Science', 'Design']
+
+const EMPTY_FORM = {
+  title: '',
+  description: '',
+  category: 'Programming',
+  language: 'en' as 'en' | 'rw' | 'both',
+  level: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
+  duration: '',
+  tags: '',
+  videoUrl: '',
+}
+
+function getYouTubeId(url: string) {
+  const m = url.match(/(?:youtu\.be\/|v=|\/embed\/)([A-Za-z0-9_-]{11})/)
+  return m ? m[1] : null
+}
 
 export default function Community() {
   const [tutorials, setTutorials] = useState<Tutorial[]>([])
@@ -27,8 +44,17 @@ export default function Community() {
   const [langFilter, setLangFilter] = useState('')
   const [loading, setLoading] = useState(true)
   const [liking, setLiking] = useState<string | null>(null)
-  const { token } = useAuth()
+
+  const [showUpload, setShowUpload] = useState(false)
+  const [uploadForm, setUploadForm] = useState(EMPTY_FORM)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+
+  const [playingTutorial, setPlayingTutorial] = useState<Tutorial | null>(null)
+
+  const { token, user } = useAuth()
   const { t } = useLang()
+  const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
     const params = new URLSearchParams()
@@ -48,9 +74,40 @@ export default function Community() {
     setLiking(null)
   }
 
+  async function openPlayer(tutorial: Tutorial) {
+    setPlayingTutorial(tutorial)
+    await fetch(`/api/community/tutorials/${tutorial.id}/view`, { method: 'POST' }).catch(() => {})
+    setTutorials(ts => ts.map(t => t.id === tutorial.id ? { ...t, views: t.views + 1 } : t))
+  }
+
+  async function handleUpload(e: React.FormEvent) {
+    e.preventDefault()
+    if (!token) return
+    setUploading(true)
+    setUploadError('')
+    try {
+      const res = await fetch('/api/community/tutorials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(uploadForm),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Upload failed')
+      setTutorials(ts => [data.data, ...ts])
+      setShowUpload(false)
+      setUploadForm(EMPTY_FORM)
+    } catch (err: any) {
+      setUploadError(err.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const levelBadge: Record<string, string> = { beginner: 'badge-success', intermediate: 'badge-warning', advanced: 'badge-danger' }
 
   if (loading) return <div className="page" style={{ display:'flex', justifyContent:'center', alignItems:'center' }}><div className="spinner" /></div>
+
+  const youtubeId = playingTutorial?.videoUrl ? getYouTubeId(playingTutorial.videoUrl) : null
 
   return (
     <div className="page">
@@ -91,7 +148,11 @@ export default function Community() {
         <div className="grid-3">
           {tutorials.map(tutorial => (
             <div key={tutorial.id} className={`card ${styles.tutCard}`}>
-              <div className={styles.thumb} style={{ background: `linear-gradient(135deg, ${tutorial.thumbnailColor}33, ${tutorial.thumbnailColor}11)`, borderColor: tutorial.thumbnailColor + '44' }}>
+              <div
+                className={styles.thumb}
+                style={{ background: `linear-gradient(135deg, ${tutorial.thumbnailColor}33, ${tutorial.thumbnailColor}11)`, borderColor: tutorial.thumbnailColor + '44', cursor: 'pointer' }}
+                onClick={() => openPlayer(tutorial)}
+              >
                 <div className={styles.playBtn} style={{ background: tutorial.thumbnailColor }}>▶</div>
                 <span className={styles.duration}>{tutorial.duration}</span>
                 {tutorial.language === 'rw' && <span className={styles.rwBadge}>🇷🇼 Kinyarwanda</span>}
@@ -103,7 +164,7 @@ export default function Community() {
                   <span className={`badge ${levelBadge[tutorial.level] || 'badge-gray'}`}>{tutorial.level}</span>
                   <span className={styles.category}>{tutorial.category}</span>
                 </div>
-                <h3 className={styles.tutTitle}>{tutorial.title}</h3>
+                <h3 className={styles.tutTitle} style={{ cursor: 'pointer' }} onClick={() => openPlayer(tutorial)}>{tutorial.title}</h3>
                 <p className={styles.tutDesc}>{tutorial.description}</p>
 
                 <div className={styles.tags}>
@@ -136,12 +197,145 @@ export default function Community() {
               <h3>Share Your Knowledge 🎓</h3>
               <p>Verified experts earn <strong className="text-warning">50 tokens</strong> per approved tutorial. Teach in Kinyarwanda to reach more learners!</p>
             </div>
-            <button className="btn btn-primary" onClick={() => alert('Tutorial submission coming in Phase 3!')}>
+            <button className="btn btn-primary" onClick={() => { if (!token) { window.location.href = '/auth'; return; } setShowUpload(true) }}>
               + Upload Tutorial
             </button>
           </div>
         </div>
       </div>
+
+      {/* ── Video Player Modal ── */}
+      {playingTutorial && (
+        <div className={styles.playerOverlay} onClick={() => setPlayingTutorial(null)}>
+          <div className={styles.playerPanel} onClick={e => e.stopPropagation()}>
+            <div className={styles.playerHeader}>
+              <div>
+                <h2 className={styles.playerTitle}>{playingTutorial.title}</h2>
+                <p className={styles.playerMeta}>by {playingTutorial.authorName} · {playingTutorial.duration}</p>
+              </div>
+              <button className={styles.playerClose} onClick={() => setPlayingTutorial(null)}>✕</button>
+            </div>
+
+            <div className={styles.playerScreen}>
+              {youtubeId ? (
+                <iframe
+                  src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1`}
+                  title={playingTutorial.title}
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className={styles.playerIframe}
+                />
+              ) : playingTutorial.videoUrl ? (
+                <video
+                  ref={videoRef}
+                  src={playingTutorial.videoUrl}
+                  controls
+                  autoPlay
+                  className={styles.playerVideo}
+                />
+              ) : (
+                <div className={styles.playerPlaceholder} style={{ background: `linear-gradient(135deg, ${playingTutorial.thumbnailColor}33, ${playingTutorial.thumbnailColor}11)` }}>
+                  <div className={styles.playerPlaceholderIcon} style={{ color: playingTutorial.thumbnailColor }}>▶</div>
+                  <p>No video uploaded yet</p>
+                  <span>Upload a YouTube link or video file to play here</span>
+                </div>
+              )}
+            </div>
+
+            <div className={styles.playerInfo}>
+              <p className={styles.playerDesc}>{playingTutorial.description}</p>
+              <div className={styles.playerTags}>
+                {playingTutorial.tags.map(tag => <span key={tag} className="tag">#{tag}</span>)}
+              </div>
+              <div className={styles.playerActions}>
+                <button className={styles.likeBtn} onClick={() => { handleLike(playingTutorial.id); setPlayingTutorial(t => t ? { ...t, likes: t.likes + 1 } : t) }} disabled={!token}>
+                  ❤️ {playingTutorial.likes} Likes
+                </button>
+                <span className={styles.views}>👁 {playingTutorial.views.toLocaleString()} views</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Upload Tutorial Modal ── */}
+      {showUpload && (
+        <div className={styles.playerOverlay} onClick={() => setShowUpload(false)}>
+          <div className={styles.uploadPanel} onClick={e => e.stopPropagation()}>
+            <div className={styles.playerHeader}>
+              <div>
+                <h2 className={styles.playerTitle}>Upload a Tutorial 🎓</h2>
+                <p className={styles.playerMeta}>Share your knowledge and earn 50 tokens</p>
+              </div>
+              <button className={styles.playerClose} onClick={() => setShowUpload(false)}>✕</button>
+            </div>
+
+            <form onSubmit={handleUpload} className={styles.uploadForm}>
+              <div className="form-group">
+                <label>Title *</label>
+                <input type="text" placeholder="e.g. React Hooks mu Kinyarwanda" value={uploadForm.title} onChange={e => setUploadForm(f => ({ ...f, title: e.target.value }))} required />
+              </div>
+
+              <div className="form-group">
+                <label>Description *</label>
+                <textarea rows={3} placeholder="What will learners gain from this tutorial?" value={uploadForm.description} onChange={e => setUploadForm(f => ({ ...f, description: e.target.value }))} required style={{ resize: 'vertical' }} />
+              </div>
+
+              <div className={styles.uploadGrid}>
+                <div className="form-group">
+                  <label>Category *</label>
+                  <select value={uploadForm.category} onChange={e => setUploadForm(f => ({ ...f, category: e.target.value }))}>
+                    {['Programming', 'Frontend', 'Backend', 'Data Science', 'Design'].map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Language *</label>
+                  <select value={uploadForm.language} onChange={e => setUploadForm(f => ({ ...f, language: e.target.value as any }))}>
+                    <option value="en">English</option>
+                    <option value="rw">Kinyarwanda</option>
+                    <option value="both">Both</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Level *</label>
+                  <select value={uploadForm.level} onChange={e => setUploadForm(f => ({ ...f, level: e.target.value as any }))}>
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Duration</label>
+                  <input type="text" placeholder="e.g. 1h 30min" value={uploadForm.duration} onChange={e => setUploadForm(f => ({ ...f, duration: e.target.value }))} />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Tags (comma-separated)</label>
+                <input type="text" placeholder="e.g. react, javascript, kinyarwanda" value={uploadForm.tags} onChange={e => setUploadForm(f => ({ ...f, tags: e.target.value }))} />
+              </div>
+
+              <div className="form-group">
+                <label>Video URL</label>
+                <input type="url" placeholder="YouTube link or direct video URL (optional)" value={uploadForm.videoUrl} onChange={e => setUploadForm(f => ({ ...f, videoUrl: e.target.value }))} />
+                <small style={{ color: '#6b7280', fontSize: '0.78rem', marginTop: '0.25rem', display: 'block' }}>
+                  Paste a YouTube link (e.g. https://youtube.com/watch?v=…) and it will be embedded automatically.
+                </small>
+              </div>
+
+              {uploadError && <div className={styles.uploadError}>{uploadError}</div>}
+
+              <div className={styles.uploadActions}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowUpload(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={uploading}>
+                  {uploading ? 'Uploading…' : '🚀 Publish Tutorial'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
