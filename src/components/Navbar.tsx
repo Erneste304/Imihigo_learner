@@ -21,14 +21,18 @@ export default function Navbar() {
   const navLinks = user
     ? [
         { to: '/dashboard', key: 'Dashboard' },
-        { to: '/skills', key: 'Skills' },
-        { to: '/jobs', key: 'Jobs' },
+        { to: '/courses', key: 'Courses' },
+        { to: '/skills', key: 'Verify Skills' },
+        { to: '/mentorship', key: 'Mentorship' },
+        { to: '/coding-lab', key: 'Coding Lab' },
+        { to: '/study-groups', key: 'Study Groups' },
         { to: '/community', key: 'Community' },
         { to: '/leaderboard', key: 'Leaderboard' },
       ]
     : [
         { to: '/skills', key: 'Skills' },
         { to: '/jobs', key: 'Jobs' },
+        { to: '/verify', key: 'Verify' },
         { to: '/community', key: 'Community' },
         { to: '/leaderboard', key: 'Leaderboard' },
       ]
@@ -77,7 +81,9 @@ export default function Navbar() {
                     <div className={styles.dropdownRole}>{user.role}</div>
                     <hr className={styles.divider} />
                     <Link to="/profile" className={styles.dropdownItem} onClick={() => setMenuOpen(false)}>{t('Profile')}</Link>
-                    <Link to="/employer" className={styles.dropdownItem} onClick={() => setMenuOpen(false)}>💼 Employer Portal</Link>
+                    {user.role === 'employer' && <Link to="/employer" className={styles.dropdownItem} onClick={() => setMenuOpen(false)}>💼 Employer Portal</Link>}
+                    {user.role === 'instructor' && <Link to="/instructor" className={styles.dropdownItem} onClick={() => setMenuOpen(false)}>👨‍🏫 Instructor Portal</Link>}
+                    {user.role === 'admin' && <Link to="/admin" className={styles.dropdownItem} onClick={() => setMenuOpen(false)}>🛡️ Admin Panel</Link>}
                     <hr className={styles.divider} />
                     <button className={`${styles.dropdownItem} ${styles.logout}`} onClick={handleLogout}>{t('Sign Out')}</button>
                   </div>

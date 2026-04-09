@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { useLang } from '../context/LangContext'
 import styles from './Landing.module.css'
 
@@ -19,17 +21,73 @@ const stats = [
 ]
 
 const phases = [
-  { phase: 'Phase 1 — Now', desc: 'Skill assessment engine + verified credentials', active: true },
-  { phase: 'Phase 2', desc: 'Smart job matching + employer portal', active: false },
-  { phase: 'Phase 3', desc: 'Kinyarwanda voice tutor + offline mode', active: false },
-  { phase: 'Phase 4', desc: 'Blockchain micro-credential marketplace', active: false },
+  { 
+    phase: 'Phase 1 — MVP Foundation', 
+    desc: 'Skill assessment engine + verified credentials', 
+    active: true,
+    details: [
+      'Authentication & User Profiles',
+      'Skill Assessments & Quizzes',
+      'PDF Certificates Generation',
+      'Interactive Learning & Job Browsing'
+    ]
+  },
+  { 
+    phase: 'Phase 2 — Core Market Features', 
+    desc: 'Smart job matching + employer portal', 
+    active: false,
+    details: [
+      'Email & SMS Notifications',
+      'Employer Dashboard & Analytics',
+      'Mobile Money Payment Integration',
+      'Job Marketplace Advanced Filtering'
+    ]
+  },
+  { 
+    phase: 'Phase 3 — AI & Intelligence Growth', 
+    desc: 'Kinyarwanda voice tutor + offline mode', 
+    active: false,
+    details: [
+      'AI Code Review & NLP Resume Parsing',
+      'Video Interview Recording & Analysis',
+      'Offline-first PWA Enhancements',
+      'Kinyarwanda Full Translation'
+    ]
+  },
+  { 
+    phase: 'Phase 4 — Blockchain & Advanced Trust', 
+    desc: 'Blockchain micro-credential marketplace', 
+    active: false,
+    details: [
+      'Polygon Smart Contracts for Certificates',
+      'QR Code Instant Verification',
+      'WhatsApp Integration & Notifications',
+      'Referral & Rewards Gamification'
+    ]
+  },
 ]
 
 export default function Landing() {
   const { t } = useLang()
+  const [expandedPhase, setExpandedPhase] = useState<string | null>(null)
+
+  const togglePhase = (phaseName: string) => {
+    if (expandedPhase === phaseName) {
+      setExpandedPhase(null)
+    } else {
+      setExpandedPhase(phaseName)
+    }
+  }
 
   return (
     <div className={styles.page}>
+      <Helmet>
+        <title>Imihigo Learn — Prove Your Skills, Land the Job</title>
+        <meta name="description" content="Rwanda's leading platform for AI skill verification, blockchain credentials, and smart job matching. Stop handing out CVs. Start proving what you can do." />
+        <meta property="og:title" content="Imihigo Learn — Prove Your Skills, Land the Job" />
+        <meta property="og:description" content="Rwanda's leading platform for AI skill verification and smart job matching." />
+      </Helmet>
+
       <section className={styles.hero}>
         <div className={styles.heroBadge}>{t('Built for Rwanda')}</div>
         <h1 className={styles.heroTitle}>
@@ -111,15 +169,37 @@ export default function Landing() {
             <p>Building Africa's most trusted skill verification ecosystem</p>
           </div>
           <div className={styles.phases}>
-            {phases.map(p => (
-              <div key={p.phase} className={`${styles.phaseItem} ${p.active ? styles.phaseActive : ''}`}>
-                <div className={styles.phaseDot} />
-                <div>
-                  <div className={styles.phaseLabel}>{p.phase}</div>
-                  <div className={styles.phaseDesc}>{p.desc}</div>
+            {phases.map(p => {
+              const isExpanded = expandedPhase === p.phase;
+              return (
+                <div 
+                  key={p.phase} 
+                  className={`${styles.phaseItem} ${p.active ? styles.phaseActive : ''}`}
+                  onClick={() => togglePhase(p.phase)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className={styles.phaseDot} />
+                  <div style={{ width: '100%' }}>
+                    <div className={styles.phaseHeader}>
+                      <div>
+                        <div className={styles.phaseLabel}>{p.phase}</div>
+                        <div className={styles.phaseDesc}>{p.desc}</div>
+                      </div>
+                      <div className={styles.phaseToggle}>{isExpanded ? '−' : '+'}</div>
+                    </div>
+                    {isExpanded && (
+                      <div className={styles.phaseDetails}>
+                        <ul>
+                          {p.details.map((detail, idx) => (
+                            <li key={idx}>✅ {detail}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </section>

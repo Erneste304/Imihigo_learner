@@ -1,7 +1,13 @@
 import { Router, Response } from 'express'
 import { v4 as uuid } from 'uuid'
 import { authenticate, AuthRequest } from '../middleware/auth.js'
-import { db } from '../data/store.js'
+import { db, saveDb } from '../data/store.js'
+import { issueCredentialOnChain } from '../services/blockchain.js'
+import { sendAssessmentResultEmail } from '../services/email.js'
+import { sendSMS } from '../services/sms.js'
+import { logActivity } from '../services/activity.js'
+import { io } from '../index.js'
+import { gamificationService } from '../services/gamification.js'
 
 const router = Router()
 
@@ -23,10 +29,11 @@ router.post('/start', authenticate, (req: AuthRequest, res: Response) => {
     startedAt: new Date().toISOString(),
   }
   db.assessments.push(assessment)
+  saveDb()
   res.status(201).json(assessment)
 })
 
-router.post('/:id/submit', authenticate, (req: AuthRequest, res: Response) => {
+router.post('/:id/submit', authenticate, async (req: AuthRequest, res: Response) => {
   const { answers } = req.body
   const assessment = db.assessments.find(a => a.id === req.params.id && a.userId === req.user!.id)
   if (!assessment) return res.status(404).json({ error: 'Assessment not found' })
@@ -41,7 +48,14 @@ router.post('/:id/submit', authenticate, (req: AuthRequest, res: Response) => {
   assessment.passed = passed
   assessment.completedAt = new Date().toISOString()
 
+  let blockchainTx = '0x' + uuid().replace(/-/g, '')
   if (passed) {
+    // Attempt real mock transaction
+    const blockchainRes = await issueCredentialOnChain(assessment.userId, assessment.skillId, score)
+    if (blockchainRes.success && blockchainRes.txHash) {
+      blockchainTx = blockchainRes.txHash
+    }
+
     const skill = db.skills.find(s => s.id === assessment.skillId)
     const credential = {
       id: uuid(),
@@ -49,7 +63,7 @@ router.post('/:id/submit', authenticate, (req: AuthRequest, res: Response) => {
       skillId: assessment.skillId,
       skillName: skill?.name || 'Unknown',
       issuedAt: new Date().toISOString(),
-      txHash: '0x' + uuid().replace(/-/g, ''),
+      txHash: blockchainTx,
       qrCode: `QR_${uuid().slice(0, 8)}_verify`,
       level: skill?.level || 'beginner',
       verified: true,
@@ -61,10 +75,41 @@ router.post('/:id/submit', authenticate, (req: AuthRequest, res: Response) => {
     if (user) {
       user.tokens += 25
       if (!user.skills.includes(skill?.name || '')) user.skills.push(skill?.name || '')
+
+      // Gamification Hooks
+      gamificationService.addXP(user.id, 50, 'Assessment Passed')
+      if (score === 100) gamificationService.awardBadge(user.id, 'perfect_score')
+      
+      const totalPassed = db.assessments.filter(a => a.userId === user.id && a.passed).length
+      if (totalPassed === 1) gamificationService.awardBadge(user.id, 'first_assessment')
+      if (totalPassed === 10) gamificationService.awardBadge(user.id, 'assessment_master')
     }
   }
 
-  res.json({ assessment, passed, score })
+  // Trigger Notifications (Async)
+  const user = db.users.find(u => u.id === assessment.userId)
+  const skill = db.skills.find(s => s.id === assessment.skillId)
+  if (user) {
+    sendAssessmentResultEmail(user.email, user.name, skill?.name || 'Skill', score, passed)
+    sendSMS(user.email, `Imihigo Learn: You scored ${score}% on ${skill?.name}. ${passed ? 'Blockchain credential issued!' : 'Try again soon.'}`) // Mocking phone with email for SMS demo
+  }
+
+  saveDb()
+
+  // Log activity for the live admin feed
+  const actUser = db.users.find(u => u.id === assessment.userId)
+  const actSkill = db.skills.find(s => s.id === assessment.skillId)
+  logActivity(io, {
+    type: passed ? 'CERTIFICATE_ISSUED' : 'ASSESSMENT_COMPLETED',
+    message: passed
+      ? `${actUser?.name} earned a blockchain credential for ${actSkill?.name}`
+      : `${actUser?.name} completed the ${actSkill?.name} assessment with ${score}%`,
+    userId: assessment.userId,
+    userName: actUser?.name || 'Unknown',
+    metadata: { score, skillId: assessment.skillId }
+  })
+
+  res.json({ assessment, passed, score, txHash: blockchainTx })
 })
 
 export default router

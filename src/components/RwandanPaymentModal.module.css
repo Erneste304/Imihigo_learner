@@ -1,0 +1,72 @@
+.backdrop {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;
+  z-index: 2000; backdrop-filter: blur(8px);
+}
+
+.modal {
+  background: #ffffff; color: #1f2937;
+  border-radius: 20px; width: 90%; max-width: 400px; padding: 2.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,1);
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: center;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.logo {
+  background: #ffcc00; width: 64px; height: 64px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 1.5rem; font-weight: 900; font-size: 1.25rem; color: #000;
+  box-shadow: 0 4px 12px rgba(255, 204, 0, 0.3);
+}
+
+.title { font-size: 1.25rem; font-weight: 800; color: #111827; margin-bottom: 0.5rem; }
+.desc { font-size: 0.88rem; color: #6b7280; margin-bottom: 2rem; }
+
+.priceBox {
+  background: #f9fafb; border: 1px dashed #d1d5db;
+  border-radius: 12px; padding: 1rem; margin-bottom: 2rem;
+}
+.amount { font-size: 1.5rem; font-weight: 900; color: #111827; }
+.label { font-size: 0.75rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+
+.inputGroup { text-align: left; margin-bottom: 2rem; }
+.inputGroup label { display: block; font-weight: 700; font-size: 0.85rem; margin-bottom: 0.5rem; }
+.phoneInput {
+  display: flex; align-items: center; border: 2px solid #e5e7eb; border-radius: 12px;
+  padding: 0 1rem; transition: border-color 0.2s;
+}
+.phoneInput:focus-within { border-color: #ffcc00; }
+.prefix { font-weight: 700; color: #6b7280; margin-right: 0.5rem; }
+.input {
+  border: none; outline: none; padding: 0.75rem 0; width: 100%;
+  font-size: 1rem; font-weight: 600; color: #111827;
+}
+
+.btnPay {
+  width: 100%; background: #ffcc00; color: #000; border: none;
+  border-radius: 12px; padding: 0.88rem; font-weight: 800; font-size: 1rem;
+  cursor: pointer; transition: transform 0.2s, background 0.2s;
+}
+.btnPay:hover { background: #f5c200; transform: translateY(-1px); }
+.btnPay:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btnCancel {
+  background: transparent; border: none; color: #9ca3af;
+  margin-top: 1rem; font-size: 0.88rem; font-weight: 600; cursor: pointer;
+}
+.btnCancel:hover { color: #4b5563; }
+
+/* Simulation View */
+.simulating { padding: 1rem 0; }
+.spinner {
+  width: 48px; height: 48px; border: 4px solid #f3f4f6; border-top-color: #ffcc00;
+  border-radius: 50%; margin: 0 auto 1.5rem; animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.simTitle { font-weight: 800; color: #111827; margin-bottom: 0.5rem; }
+.simDesc { font-size: 0.88rem; color: #6b7280; }

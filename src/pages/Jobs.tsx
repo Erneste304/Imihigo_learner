@@ -1,25 +1,39 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { useAuth } from '../context/AuthContext'
+import ApplyModal from '../components/ApplyModal'
 import { Job } from '../types'
 import styles from './Jobs.module.css'
 
 export default function Jobs() {
-  const [jobs, setJobs] = useState<Job[]>([])
+  const [jobs, setJobs] = useState<(Job & { applied?: boolean; matchRate?: number; applications?: number })[]>([])
   const [filter, setFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [remote, setRemote] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [applyingJob, setApplyingJob] = useState<(Job & { applied?: boolean }) | null>(null)
   const { user, token } = useAuth()
 
-  useEffect(() => {
+  const fetchJobs = async () => {
+    setLoading(true)
     const url = user && token
       ? `/api/jobs/match/${user.id}`
       : `/api/jobs`
     const headers = token ? { Authorization: `Bearer ${token}` } : {}
-    fetch(url, { headers: headers as any }).then(r => r.json()).then(data => {
+    try {
+      const r = await fetch(url, { headers: headers as any })
+      const data = await r.json()
       setJobs(Array.isArray(data) ? data : [])
-    }).finally(() => setLoading(false))
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchJobs()
   }, [user, token])
 
   const filtered = jobs.filter(j => {
@@ -40,6 +54,11 @@ export default function Jobs() {
 
   return (
     <div className="page">
+      <Helmet>
+        <title>{filter ? `Jobs matching "${filter}" | Imihigo Learn` : "Jobs | Imihigo Learn"}</title>
+        <meta name="description" content="Find tech, gig, and informal sector jobs verified by your blockchain skills in Rwanda." />
+      </Helmet>
+
       <div className="container">
         <div className={styles.header}>
           <div>
@@ -101,17 +120,39 @@ export default function Jobs() {
                 <div className={styles.salary}>{job.salary}</div>
               </div>
 
-              <div className={styles.appFooter}>
-                <span className={styles.apps}>{job.applications} applicants</span>
+                <div className={styles.appFooter}>
+                <span className={styles.apps}>{job.applications || 0} applicants</span>
                 <span className={styles.deadline}>Deadline: {new Date(job.deadline).toLocaleDateString()}</span>
               </div>
 
-              <button className="btn btn-primary" style={{ width:'100%', justifyContent:'center', marginTop:'0.75rem' }}>
-                Apply Now →
-              </button>
+              {job.applied ? (
+                <button className="btn btn-success" disabled style={{ width:'100%', justifyContent:'center', marginTop:'0.75rem', opacity: 0.8 }}>
+                  ✓ Application Sent
+                </button>
+              ) : (
+                <button 
+                  className="btn btn-primary" 
+                  style={{ width:'100%', justifyContent:'center', marginTop:'0.75rem' }}
+                  onClick={() => setApplyingJob(job)}
+                >
+                  Apply Now →
+                </button>
+              )}
             </div>
           ))}
         </div>
+
+        {applyingJob && token && (
+          <ApplyModal 
+            job={applyingJob} 
+            token={token} 
+            onClose={() => setApplyingJob(null)} 
+            onSuccess={() => {
+              setApplyingJob(null)
+              fetchJobs() // Refresh to show applied status
+            }} 
+          />
+        )}
 
         {filtered.length === 0 && (
           <div className={styles.empty}>

@@ -6,8 +6,11 @@ import styles from './Employer.module.css'
 export default function Employer() {
   const { user, token } = useAuth()
   const [jobs, setJobs] = useState<Job[]>([])
-  const [tab, setTab] = useState<'jobs' | 'post' | 'verify'>('jobs')
+  const [tab, setTab] = useState<'jobs' | 'post' | 'verify' | 'enterprise'>('jobs')
   const [posting, setPosting] = useState(false)
+  const [apiKeys, setApiKeys] = useState<any[]>([])
+  const [bulkFile, setBulkFile] = useState<File | null>(null)
+  const [bulkStatus, setBulkStatus] = useState<'idle' | 'uploading' | 'processing' | 'done'>('idle')
   const [qrCode, setQrCode] = useState('')
   const [verifyResult, setVerifyResult] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -45,6 +48,69 @@ export default function Employer() {
     } else {
       setVerifyResult({ valid: false })
     }
+  }
+
+  const fetchKeys = async () => {
+    try {
+      const res = await fetch('/api/enterprise/api-keys', { headers: { Authorization: `Bearer ${token}` } })
+      const data = await res.json()
+      setApiKeys(Array.isArray(data) ? data : [])
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  useEffect(() => {
+    if (tab === 'enterprise') fetchKeys()
+  }, [tab])
+
+  const generateKey = async () => {
+    try {
+      await fetch('/api/enterprise/api-keys', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ name: `Key ${apiKeys.length + 1}` })
+      })
+      fetchKeys()
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleBulkProcess = async () => {
+    if (!bulkFile) return
+    setBulkStatus('processing')
+    
+    // Simulate parsing and API call
+    setTimeout(async () => {
+      try {
+        await fetch('/api/enterprise/bulk-generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            data: [
+              { name: 'Jean Bosco', email: 'bosch@example.com', skill: 'JavaScript Fundamentals', level: 'Advanced' },
+              { name: 'Divine Keza', email: 'divine@tech.rw', skill: 'React Development', level: 'Intermediate' }
+            ]
+          })
+        })
+        setBulkStatus('done')
+        setTimeout(() => {
+          setBulkStatus('idle')
+          setBulkFile(null)
+          setTab('jobs') // Go back to show updated stats (if we had real stats)
+        }, 2000)
+      } catch (e) {
+        console.error(e)
+        setBulkStatus('idle')
+      }
+    }, 3000)
   }
 
   if (!user) return (
@@ -89,6 +155,7 @@ export default function Employer() {
           <button className={`${styles.tab} ${tab === 'jobs' ? styles.tabActive : ''}`} onClick={() => setTab('jobs')}>📋 Posted Jobs</button>
           <button className={`${styles.tab} ${tab === 'post' ? styles.tabActive : ''}`} onClick={() => setTab('post')}>+ Post a Job</button>
           <button className={`${styles.tab} ${tab === 'verify' ? styles.tabActive : ''}`} onClick={() => setTab('verify')}>🔗 Verify Credential</button>
+          <button className={`${styles.tab} ${tab === 'enterprise' ? styles.tabActive : ''}`} onClick={() => setTab('enterprise')}>🚀 Enterprise Portal</button>
         </div>
 
         {tab === 'jobs' && (
@@ -167,44 +234,119 @@ export default function Employer() {
         )}
 
         {tab === 'verify' && (
-          <div className={styles.verifySection}>
-            <div className={`card ${styles.verifyCard}`}>
-              <h2>🔗 Verify a Candidate's Credential</h2>
-              <p className="text-muted">Enter the QR code or transaction hash from a candidate's blockchain credential to instantly verify it.</p>
+          <div className={`card ${styles.verifyCard}`}>
+            <h2>Verify Credential</h2>
+            <p className="text-muted mb-6">Enter the Skill ID or scan the QR code to instantly verify a candidate's blockchain-backed credential.</p>
+            
+            <div className="flex gap-2 mb-6">
+              <input 
+                type="text" 
+                placeholder="QR_xxxx_verify or Credential ID" 
+                value={qrCode} 
+                onChange={(e) => setQrCode(e.target.value)} 
+                className="flex-1"
+              />
+              <button className="btn btn-primary" onClick={handleVerify}>Verify Now</button>
+            </div>
 
-              <div className={styles.verifyInput}>
-                <input type="text" placeholder="Enter QR code (e.g. QR_a1b2c3d4_verify) or tx hash" value={qrCode} onChange={e => { setQrCode(e.target.value); setVerifyResult(null) }} />
-                <button className="btn btn-primary" onClick={handleVerify}>Verify →</button>
-              </div>
-
-              <div className={styles.verifyHint}>
-                Try: <code>QR_c1_verify</code> or <code>QR_c2_verify</code>
-              </div>
-
-              {verifyResult && (
-                <div className={`${styles.verifyResult} ${verifyResult.valid ? styles.verifyValid : styles.verifyInvalid}`}>
-                  {verifyResult.valid ? (
-                    <>
-                      <div className={styles.verifyIcon}>✅</div>
+            {verifyResult && (
+              <div className={`mt-4 p-6 rounded-xl border-2 ${verifyResult.valid ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                {verifyResult.valid ? (
+                  <div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="bg-green-500 text-white p-1 rounded-full">✓</div>
+                      <span className="font-bold text-green-700">Valid Credential</span>
+                    </div>
+                    <div className="grid-2 gap-4">
                       <div>
-                        <div className={styles.verifyTitle}>Credential Verified on Blockchain</div>
-                        <div className={styles.verifyDetails}>
-                          <span><strong>Holder:</strong> {verifyResult.holder}</span>
-                          <span><strong>Skill:</strong> {verifyResult.skill}</span>
-                          <span><strong>Level:</strong> {verifyResult.level}</span>
-                          <span><strong>Issued:</strong> {verifyResult.issuedAt}</span>
-                          <span><strong>Tx:</strong> <code>{verifyResult.txHash}</code></span>
-                        </div>
+                        <div className="text-xs text-green-600 font-bold uppercase">Holder</div>
+                        <div className="font-bold">{verifyResult.holder}</div>
                       </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className={styles.verifyIcon}>❌</div>
-                      <div className={styles.verifyTitle}>Invalid or Unrecognized Credential</div>
-                    </>
-                  )}
-                </div>
+                      <div>
+                        <div className="text-xs text-green-600 font-bold uppercase">Skill</div>
+                        <div className="font-bold">{verifyResult.skill} ({verifyResult.level})</div>
+                      </div>
+                      <div className="col-span-2 mt-2">
+                        <div className="text-xs text-green-600 font-bold uppercase">Blockchain Hash</div>
+                        <div className="font-mono text-[10px] break-all">{verifyResult.txHash}</div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-red-600 font-bold">
+                    ⚠️ Invalid or expired credential.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+
+        {tab === 'enterprise' && (
+          <div className="grid-2 gap-6">
+            <div className="card">
+              <h2 className="flex items-center gap-2">📦 Bulk Certification</h2>
+              <p className="text-muted mb-4">Upload an Excel/CSV file to issue certificates to multiple employees at once.</p>
+              
+              <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl p-8 text-center">
+                <input 
+                  type="file" 
+                  id="bulk-upload" 
+                  className="hidden" 
+                  accept=".xlsx,.csv" 
+                  onChange={(e) => setBulkFile(e.target.files?.[0] || null)}
+                />
+                <label htmlFor="bulk-upload" className="cursor-pointer block">
+                  <div className="text-4xl mb-2">📊</div>
+                  <div className="font-bold text-slate-900">{bulkFile ? bulkFile.name : 'Click to upload Excel file'}</div>
+                  <div className="text-xs text-slate-500">Supported: .xlsx, .csv (Max 10MB)</div>
+                </label>
+              </div>
+
+              {bulkFile && (
+                <button 
+                  className={`btn btn-primary w-full mt-4 ${bulkStatus !== 'idle' ? 'opacity-50' : ''}`}
+                  disabled={bulkStatus !== 'idle'}
+                  onClick={handleBulkProcess}
+                >
+                  {bulkStatus === 'idle' ? '🚀 Start Generation' : bulkStatus === 'processing' ? '⚙️ Processing...' : '✅ Done!'}
+                </button>
               )}
+            </div>
+
+            <div className="card">
+              <h2 className="flex items-center gap-2">🔑 API & Integration</h2>
+              <p className="text-muted mb-4">Connect Imihigo Learn to your internal HR systems via our public API.</p>
+              
+              <div className="space-y-4">
+                <button className="btn btn-secondary w-full flex items-center justify-between" onClick={generateKey}>
+                  <span>Generate New API Key</span>
+                  <span>+</span>
+                </button>
+                
+                {apiKeys.map(k => (
+                  <div key={k.id} className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-bold text-sm text-slate-700">{k.name}</span>
+                      <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded uppercase font-bold">Active</span>
+                    </div>
+                    <div className="font-mono text-xs bg-white p-2 border border-slate-200 rounded truncate">
+                      {k.apiKey}
+                    </div>
+                  </div>
+                ))}
+
+                {apiKeys.length === 0 && (
+                  <div className="text-center p-4 border border-dashed border-slate-200 rounded-lg text-slate-400 text-sm italic">
+                    No active API keys found.
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-6 pt-6 border-t border-slate-100">
+                <a href="#" className="text-blue-600 font-bold text-sm hover:underline">Read API Documentation →</a>
+              </div>
             </div>
           </div>
         )}

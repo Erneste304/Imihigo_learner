@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import RwandanPaymentModal from '../components/RwandanPaymentModal'
 import styles from './Assessment.module.css'
 
 interface Question {
@@ -25,6 +26,8 @@ export default function Assessment() {
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<{ score: number; passed: boolean } | null>(null)
   const [timeLeft, setTimeLeft] = useState(30 * 60)
+  const [showPayment, setShowPayment] = useState(false)
+  const [isUpgraded, setIsUpgraded] = useState(false)
 
   useEffect(() => {
     if (!skillId || !token) return
@@ -82,16 +85,49 @@ export default function Assessment() {
                 : `You need 70% to pass. You scored ${result.score}%. You can try again after 24 hours.`}
             </p>
             {result.passed && (
-              <div className={styles.credentialBadge}>
-                🔗 Blockchain credential issued · +25 tokens earned
+              <div className={styles.credentialContainer}>
+                <div className={styles.qrMock}>
+                  <div className={styles.qrInner}>
+                    <div className={styles.qrBlock} />
+                    <div className={styles.qrBlock} />
+                    <div className={styles.qrBlock} />
+                    <div className={styles.qrBlock} />
+                  </div>
+                  <div className={styles.qrScanText}>SCAN TO VERIFY</div>
+                </div>
+                <div className={styles.credentialBadge}>
+                  🔗 Blockchain credential issued · +25 tokens earned
+                </div>
               </div>
             )}
             <div className={styles.resultActions}>
+              {result.passed && !isUpgraded && (
+                <button className="btn btn-warning" onClick={() => setShowPayment(true)}>
+                  💳 Upgrade to International Certificate (5,000 RWF)
+                </button>
+              )}
+              {isUpgraded && (
+                <div className={styles.upgradeSuccess}>
+                  🌍 International Certificate Unlocked
+                </div>
+              )}
               <button className="btn btn-primary" onClick={() => navigate('/dashboard')}>Go to Dashboard</button>
               <button className="btn btn-secondary" onClick={() => navigate('/skills')}>More Skills</button>
             </div>
           </div>
         </div>
+
+        {showPayment && (
+          <RwandanPaymentModal
+            amount={5000}
+            itemLabel="International Certificate"
+            onSuccess={() => {
+              setShowPayment(false)
+              setIsUpgraded(true)
+            }}
+            onCancel={() => setShowPayment(false)}
+          />
+        )}
       </div>
     )
   }

@@ -48,14 +48,49 @@
   background: #111827; border: 1px solid rgba(255,255,255,0.08);
   border-radius: 20px; padding: 3rem; max-width: 480px; width: 100%; text-align: center;
 }
-.resultIcon { font-size: 5rem; margin-bottom: 1.5rem; }
-.resultTitle { font-size: 2rem; font-weight: 800; margin-bottom: 0.75rem; }
-.resultScore { font-size: 4rem; font-weight: 900; margin-bottom: 1rem; }
-.resultMsg { color: #9ca3af; line-height: 1.6; margin-bottom: 1.5rem; }
+.resultIcon { font-size: 4rem; margin-bottom: 1rem; }
+.resultTitle { font-size: 1.75rem; font-weight: 800; margin-bottom: 0.5rem; }
+.resultScore { font-size: 3.5rem; font-weight: 900; margin-bottom: 1rem; }
+.resultMsg { color: #9ca3af; margin-bottom: 2rem; max-width: 400px; margin-left: auto; margin-right: auto; line-height: 1.5; }
+
+.credentialContainer {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;
+  display: flex; flex-direction: column; align-items: center; gap: 1rem;
+}
+
+.qrMock {
+  background: white; padding: 0.75rem; border-radius: 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+}
+
+.qrInner {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px;
+}
+
+.qrBlock {
+  width: 24px; height: 24px; background: #111827; border-radius: 2px;
+}
+
+.qrScanText { font-size: 0.5rem; font-weight: 900; color: #111827; letter-spacing: 0.05em; }
 
 .credentialBadge {
-  background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3);
-  border-radius: 10px; padding: 0.75rem 1rem; font-size: 0.85rem; color: #34d399; margin-bottom: 1.5rem;
+  background: rgba(16, 185, 129, 0.1); color: #34d399;
+  padding: 0.5rem 1rem; border-radius: 30px; font-size: 0.85rem; font-weight: 600;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  margin-bottom: 1.5rem;
 }
 
 .resultActions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+
+.upgradeSuccess {
+  width: 100%; padding: 0.75rem; border-radius: 12px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white; font-weight: 800; font-size: 0.9rem;
+  margin-bottom: 0.5rem; animation: bounceIn 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes bounceIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

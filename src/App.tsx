@@ -12,6 +12,16 @@ import Profile from './pages/Profile'
 import Community from './pages/Community'
 import Leaderboard from './pages/Leaderboard'
 import Employer from './pages/Employer'
+import Admin from './pages/Admin'
+import LearningPath from './pages/LearningPath'
+import Gamification from './pages/Gamification'
+import PracticalAssessment from './pages/PracticalAssessment'
+import Mentorship from './pages/Mentorship'
+import CodingLab from './pages/CodingLab'
+import StudyGroups from './pages/StudyGroups'
+import Instructor from './pages/Instructor'
+import Courses from './pages/Courses'
+import VerifyCertificate from './pages/VerifyCertificate'
 
 function PrivateRoute({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth()
@@ -31,9 +41,21 @@ function AppRoutes() {
         <Route path="/community" element={<Community />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/assessment/:id" element={<PrivateRoute><Assessment /></PrivateRoute>} />
+        <Route path="/assessment/:id/practical" element={<PrivateRoute><PracticalAssessment /></PrivateRoute>} />
         <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
         <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
         <Route path="/employer" element={<PrivateRoute><Employer /></PrivateRoute>} />
+        <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
+        <Route path="/learning" element={<PrivateRoute><LearningPath /></PrivateRoute>} />
+        <Route path="/gamification" element={<PrivateRoute><Gamification /></PrivateRoute>} />
+        <Route path="/mentorship" element={<PrivateRoute><Mentorship /></PrivateRoute>} />
+        <Route path="/coding-lab" element={<PrivateRoute><CodingLab /></PrivateRoute>} />
+        <Route path="/study-groups" element={<PrivateRoute><StudyGroups /></PrivateRoute>} />
+        <Route path="/instructor" element={<PrivateRoute><Instructor /></PrivateRoute>} />
+        <Route path="/courses" element={<PrivateRoute><Courses /></PrivateRoute>} />
+        <Route path="/verify/:certId" element={<VerifyCertificate />} />
+        <Route path="/verify" element={<VerifyCertificate />} />
+        <Route path="/enterprise" element={<PrivateRoute><Employer /></PrivateRoute>} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>

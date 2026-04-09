@@ -2,7 +2,9 @@ import { Router, Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { v4 as uuid } from 'uuid'
-import { db } from '../data/store.js'
+import { db, saveDb } from '../data/store.js'
+import { logActivity } from '../services/activity.js'
+import { io } from '../index.js'
 
 const router = Router()
 const JWT_SECRET = process.env.JWT_SECRET || 'imihigo-learn-secret-2024'
@@ -15,6 +17,15 @@ router.post('/register', async (req: Request, res: Response) => {
   const hashed = await bcrypt.hash(password, 10)
   const user = { id: uuid(), name, email, password: hashed, role, skills: [], verified: false, createdAt: new Date().toISOString(), tokens: 50 }
   db.users.push(user as any)
+  saveDb()
+
+  logActivity(io, {
+    type: 'USER_REGISTER',
+    message: `New user ${name} joined Imihigo Learn as ${role}`,
+    userId: user.id,
+    userName: name,
+    metadata: { role }
+  })
 
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' })
   const { password: _, ...safe } = user

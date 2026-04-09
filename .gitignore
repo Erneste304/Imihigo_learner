@@ -2,3 +2,6 @@ node_modules
 dist
 .env
 .env.local
+
+# Application Data / Secrets
+server/data/db.json

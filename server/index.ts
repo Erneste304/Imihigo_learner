@@ -13,6 +13,19 @@ import userRoutes from './routes/users.js'
 import assessmentRoutes from './routes/assessments.js'
 import communityRoutes from './routes/community.js'
 import leaderboardRoutes from './routes/leaderboard.js'
+import videoRoutes from './routes/video.js'
+import paymentRoutes from './routes/payments.js'
+import adminRoutes from './routes/admin.js'
+import enterpriseRoutes from './routes/enterprise.js'
+import learningRoutes from './routes/learning.js'
+import gamificationRoutes from './routes/gamification.js'
+import mentorshipRoutes from './routes/mentorship.js'
+import codingRoutes from './routes/coding.js'
+import studyGroupRoutes from './routes/study-groups.js'
+import certificationRoutes from './routes/certification.js'
+import instructorRoutes from './routes/instructor.js'
+import resumeRoutes from './routes/resume.js'
+
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -38,11 +51,26 @@ app.use('/api/users', userRoutes)
 app.use('/api/assessments', assessmentRoutes)
 app.use('/api/community', communityRoutes)
 app.use('/api/leaderboard', leaderboardRoutes)
+app.use('/api/video', videoRoutes)
+app.use('/api/payments', paymentRoutes)
+app.use('/api/admin', adminRoutes)
+app.use('/api/enterprise', enterpriseRoutes)
+app.use('/api/resumes', resumeRoutes)
+app.use('/api/learning', learningRoutes)
+app.use('/api/gamification', gamificationRoutes)
+app.use('/api/mentorship', mentorshipRoutes)
+app.use('/api/coding', codingRoutes)
+app.use('/api/study-groups', studyGroupRoutes)
+app.use('/api/certification', certificationRoutes)
+app.use('/api/instructors', instructorRoutes)
+
+// Serve uploaded videos locally
+app.use('/uploads', express.static(join(process.cwd(), 'uploads')))
 
 const distPath = join(__dirname, '../dist')
 if (existsSync(distPath)) {
   app.use(express.static(distPath))
-  app.get('*', (_req, res) => {
+  app.use((_req, res) => {
     res.sendFile(join(distPath, 'index.html'))
   })
 }
