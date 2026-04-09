@@ -54,6 +54,7 @@ export interface User {
   verified: boolean
   createdAt: string
   tokens: number
+  suspended?: boolean
 }
 
 // --- SKILL & ASSESSMENT MODELS ---
@@ -104,6 +105,7 @@ export interface Job {
   remote: boolean
   postedAt: string
   employerId: string
+  active?: boolean
 }
 
 export interface JobApplication {
@@ -285,6 +287,7 @@ export interface Course {
   certificateFee: number
   enrolledCount: number
   createdAt: string
+  active?: boolean
 }
 
 export interface AdminSetting {

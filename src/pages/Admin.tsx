@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 import styles from './Admin.module.css'
-import { Users, BookOpen, Briefcase, DollarSign, CheckCircle, Zap, Activity, Shield } from 'lucide-react'
+import { Users, BookOpen, Briefcase, DollarSign, CheckCircle, Activity, Shield, Video, Trash2, ToggleLeft, ToggleRight, Star } from 'lucide-react'
 import { io as connectSocket } from 'socket.io-client'
 
 interface Stats {
@@ -10,44 +10,61 @@ interface Stats {
   totalAssessmentsTaken: number
   totalJobs: number
   totalApplications: number
-  totalJobs: number
-  totalApplications: number
   totalRevenue: number
-  totalPendingVideos: number
-  usersByRole: {
-    candidates: number
-    employers: number
-    instructors: number
-    admins: number
-  }
+  usersByRole: { candidates: number; employers: number; instructors: number; admins: number }
   totalCourses: number
   totalInternationalCerts: number
+  totalTutorials: number
+  suspendedUsers: number
+  activeJobs: number
+  activeCourses: number
 }
 
-interface AdminSetting {
-  key: string
-  value: any
-  description: string
+type Tab = 'overview' | 'users' | 'courses' | 'tutorials' | 'jobs' | 'verifications' | 'settings'
+
+const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
+  { id: 'overview',      label: 'Overview',      icon: <Activity size={15} /> },
+  { id: 'users',         label: 'Users',          icon: <Users size={15} /> },
+  { id: 'courses',       label: 'Courses',        icon: <BookOpen size={15} /> },
+  { id: 'tutorials',     label: 'Tutorials',      icon: <Video size={15} /> },
+  { id: 'jobs',          label: 'Jobs',           icon: <Briefcase size={15} /> },
+  { id: 'verifications', label: 'Verifications',  icon: <CheckCircle size={15} /> },
+  { id: 'settings',      label: 'Settings',       icon: <DollarSign size={15} /> },
+]
+
+const roleColor: Record<string, string> = {
+  jobseeker: '#6366f1', employer: '#10b981', admin: '#ef4444', instructor: '#f59e0b'
 }
 
-interface Verification {
-  id: string
-  userName: string
-  skill: string
-  videoUrl: string
-  status: string
-  submittedAt: string
+function StatusPill({ active }: { active: boolean }) {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+      padding: '0.2rem 0.6rem', borderRadius: '100px', fontSize: '0.75rem', fontWeight: 700,
+      background: active ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
+      color: active ? '#10b981' : '#ef4444',
+      border: `1px solid ${active ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', display: 'inline-block' }} />
+      {active ? 'Active' : 'Inactive'}
+    </span>
+  )
 }
 
 export default function Admin() {
   const { token, user } = useAuth()
+  const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [stats, setStats] = useState<Stats | null>(null)
   const [users, setUsers] = useState<any[]>([])
-  const [verifications, setVerifications] = useState<Verification[]>([])
-  const [settings, setSettings] = useState<AdminSetting[]>([])
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'verifications' | 'monetization'>('overview')
+  const [courses, setCourses] = useState<any[]>([])
+  const [tutorials, setTutorials] = useState<any[]>([])
+  const [jobs, setJobs] = useState<any[]>([])
+  const [verifications, setVerifications] = useState<any[]>([])
+  const [settings, setSettings] = useState<any[]>([])
   const [activityFeed, setActivityFeed] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState('all')
   const feedRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -55,302 +72,182 @@ export default function Admin() {
     Promise.all([
       api.get('/admin/stats'),
       api.get('/admin/users'),
+      api.get('/admin/courses'),
+      api.get('/admin/tutorials'),
+      api.get('/admin/jobs'),
       api.get('/admin/verifications'),
       api.get('/admin/settings'),
-      api.get('/admin/activities')
-    ])
-    .then(([statsRes, usersRes, verRes, setRes, actRes]) => {
-      if (statsRes.data.success) setStats(statsRes.data.data)
-      if (usersRes.data.success) setUsers(usersRes.data.data)
-      if (verRes.data.success) setVerifications(verRes.data.data)
-      if (setRes.data.success) setSettings(setRes.data.data)
-      if (actRes.data.success) setActivityFeed(actRes.data.data)
-    })
-    .catch(console.error)
-    .finally(() => setLoading(false))
+      api.get('/admin/activities'),
+    ]).then(([st, us, co, tu, jo, ve, se, ac]) => {
+      if (st.data.success) setStats(st.data.data)
+      if (us.data.success) setUsers(us.data.data)
+      if (co.data.success) setCourses(co.data.data)
+      if (tu.data.success) setTutorials(tu.data.data)
+      if (jo.data.success) setJobs(jo.data.data)
+      if (ve.data.success) setVerifications(ve.data.data)
+      if (se.data.success) setSettings(se.data.data)
+      if (ac.data.success) setActivityFeed(ac.data.data)
+    }).catch(console.error).finally(() => setLoading(false))
   }, [token])
 
-  // Real-time activity via Socket.io
   useEffect(() => {
-    const socket = connectSocket('http://localhost:3001')
-    socket.on('platform-activity', (activity: any) => {
-      setActivityFeed(prev => [activity, ...prev].slice(0, 50))
-      // Auto-scroll feed
-      if (feedRef.current) {
-        feedRef.current.scrollTop = 0
-      }
+    const socket = connectSocket(window.location.origin)
+    socket.on('platform-activity', (a: any) => {
+      setActivityFeed(prev => [a, ...prev].slice(0, 50))
+      if (feedRef.current) feedRef.current.scrollTop = 0
     })
     return () => { socket.disconnect() }
   }, [])
 
-  const updateUserRole = async (userId: string, role: string) => {
-    try {
-      const res = await api.put(`/admin/users/${userId}/role`, { role })
-      if (res.data.success) {
-        setUsers(users.map(u => u.id === userId ? { ...u, role } : u))
-      }
-    } catch (err) {
-      console.error(err)
-    }
+  async function toggleUserSuspend(userId: string) {
+    const res = await api.put(`/admin/users/${userId}/suspend`, {})
+    if (res.data.success) setUsers(us => us.map(u => u.id === userId ? { ...u, suspended: res.data.suspended } : u))
   }
 
-  const deleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return
-    try {
-      const res = await api.delete(`/admin/users/${userId}`)
-      if (res.data.success) {
-        setUsers(users.filter(u => u.id !== userId))
-      }
-    } catch (err) {
-      console.error(err)
-    }
+  async function changeRole(userId: string, role: string) {
+    const res = await api.put(`/admin/users/${userId}/role`, { role })
+    if (res.data.success) setUsers(us => us.map(u => u.id === userId ? { ...u, role } : u))
   }
 
-  const updateSetting = async (key: string, value: any) => {
-    try {
-      const res = await api.put(`/admin/settings/${key}`, { value })
-      if (res.data.success) {
-        setSettings(settings.map(s => s.key === key ? { ...s, value } : s))
-      }
-    } catch (err) {
-      console.error(err)
-    }
+  async function deleteUser(userId: string) {
+    if (!confirm('Permanently delete this user? This cannot be undone.')) return
+    const res = await api.delete(`/admin/users/${userId}`)
+    if (res.data.success) setUsers(us => us.filter(u => u.id !== userId))
   }
 
-  if (loading) return <div className="page" style={{display:'flex',justifyContent:'center',alignItems:'center'}}><div className="spinner" /></div>
-  
-  if (user?.role !== 'admin') {
-    return (
-      <div className="page" style={{display:'flex',justifyContent:'center',alignItems:'center',flexDirection:'column'}}>
-        <h2>Access Denied</h2>
-        <p>You need Administrator privileges to view this page.</p>
-        <button className="btn btn-primary mt-2" onClick={() => window.history.back()}>Go Back</button>
-      </div>
-    )
+  async function toggleCourse(id: string) {
+    const res = await api.put(`/admin/courses/${id}/toggle`, {})
+    if (res.data.success) setCourses(cs => cs.map(c => c.id === id ? { ...c, active: res.data.active } : c))
   }
+
+  async function toggleTutorial(id: string) {
+    const res = await api.put(`/admin/tutorials/${id}/toggle`, {})
+    if (res.data.success) setTutorials(ts => ts.map(t => t.id === id ? { ...t, active: res.data.active } : t))
+  }
+
+  async function deleteTutorial(id: string) {
+    if (!confirm('Delete this tutorial permanently?')) return
+    const res = await api.delete(`/admin/tutorials/${id}`)
+    if (res.data.success) setTutorials(ts => ts.filter(t => t.id !== id))
+  }
+
+  async function toggleJob(id: string) {
+    const res = await api.put(`/admin/jobs/${id}/toggle`, {})
+    if (res.data.success) setJobs(js => js.map(j => j.id === id ? { ...j, active: res.data.active } : j))
+  }
+
+  async function deleteJob(id: string) {
+    if (!confirm('Delete this job listing permanently?')) return
+    const res = await api.delete(`/admin/jobs/${id}`)
+    if (res.data.success) setJobs(js => js.filter(j => j.id !== id))
+  }
+
+  async function updateSetting(key: string, value: any) {
+    await api.put(`/admin/settings/${key}`, { value })
+    setSettings(ss => ss.map(s => s.key === key ? { ...s, value } : s))
+  }
+
+  if (loading) return <div className="page" style={{ display:'flex', justifyContent:'center', alignItems:'center' }}><div className="spinner" /></div>
+
+  if (user?.role !== 'admin') return (
+    <div className="page" style={{ display:'flex', justifyContent:'center', alignItems:'center', flexDirection:'column', gap:'1rem' }}>
+      <Shield size={48} style={{ color: '#ef4444' }} />
+      <h2>Access Denied</h2>
+      <p className="text-muted">You need Administrator privileges to view this page.</p>
+      <button className="btn btn-primary" onClick={() => window.history.back()}>Go Back</button>
+    </div>
+  )
+
+  const filteredUsers = users.filter(u => {
+    const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase())
+    const matchRole = roleFilter === 'all' || u.role === roleFilter
+    return matchSearch && matchRole
+  })
 
   return (
     <div className="page">
       <div className="container">
-        <div className="flex items-center justify-between mb-8">
+
+        {/* Header */}
+        <div className={styles.adminHeader}>
           <div>
-            <h1 className="text-3xl font-bold dark:text-white">Platform Administration</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Mission Control — Imihigo Learn</p>
+            <h1 className={styles.adminTitle}>Platform Administration</h1>
+            <p className={styles.adminSub}>Mission Control — Imihigo Learn</p>
           </div>
-          <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-4 py-2 rounded-xl">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-green-700 dark:text-green-400 text-sm font-bold">System Online</span>
+          <div className={styles.onlinePill}>
+            <span className={styles.onlineDot} /> System Online
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex gap-4 mb-8 border-b dark:border-gray-800">
-          {['overview', 'users', 'verifications', 'monetization'].map(tab => (
+        {/* Tab nav */}
+        <div className={styles.tabNav}>
+          {TABS.map(t => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab as any)}
-              className={`pb-4 px-2 capitalize font-bold transition-all ${
-                activeTab === tab ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-400 hover:text-gray-600'
-              }`}
+              key={t.id}
+              className={`${styles.tabBtn} ${activeTab === t.id ? styles.tabBtnActive : ''}`}
+              onClick={() => setActiveTab(t.id)}
             >
-              {tab}
+              {t.icon} {t.label}
             </button>
           ))}
         </div>
 
+        {/* ── OVERVIEW ── */}
         {activeTab === 'overview' && (
-          <div className="space-y-8">
-            {/* Stats Row */}
-            <div className={styles.statsGrid}>
-              <div className={styles.statCard}>
-                <div className={styles.statIcon}><Users className="text-blue-600" /></div>
-                <div>
-                  <div className={styles.statValue}>{stats?.totalUsers ?? 0}</div>
-                  <div className={styles.statLabel}>Total Users</div>
-                </div>
+          <div className={styles.overviewGrid}>
+            {[
+              { icon: <Users size={22} />, color: '#6366f1', label: 'Total Users', value: stats?.totalUsers ?? 0 },
+              { icon: <BookOpen size={22} />, color: '#8b5cf6', label: 'Active Courses', value: stats?.activeCourses ?? 0 },
+              { icon: <Briefcase size={22} />, color: '#10b981', label: 'Active Jobs', value: stats?.activeJobs ?? 0 },
+              { icon: <Video size={22} />, color: '#f59e0b', label: 'Tutorials', value: stats?.totalTutorials ?? 0 },
+              { icon: <Star size={22} />, color: '#ec4899', label: 'Certificates Issued', value: stats?.totalInternationalCerts ?? 0 },
+              { icon: <DollarSign size={22} />, color: '#14b8a6', label: 'Platform Revenue', value: `${((stats?.totalRevenue ?? 0) / 1000).toFixed(0)}K RWF` },
+              { icon: <CheckCircle size={22} />, color: '#3b82f6', label: 'Assessments Taken', value: stats?.totalAssessmentsTaken ?? 0 },
+              { icon: <Shield size={22} />, color: '#ef4444', label: 'Suspended Users', value: stats?.suspendedUsers ?? 0 },
+            ].map(s => (
+              <div key={s.label} className={styles.overviewCard}>
+                <div className={styles.overviewIcon} style={{ background: s.color + '22', color: s.color }}>{s.icon}</div>
+                <div className={styles.overviewValue}>{s.value}</div>
+                <div className={styles.overviewLabel}>{s.label}</div>
               </div>
-              <div className={styles.statCard}>
-                <div className={styles.statIcon}><BookOpen className="text-purple-600" /></div>
-                <div>
-                  <div className={styles.statValue}>{stats?.totalCourses ?? 0}</div>
-                  <div className={styles.statLabel}>Active Courses</div>
-                </div>
-              </div>
-              <div className={styles.statCard}>
-                <div className={styles.statIcon}><Briefcase className="text-green-600" /></div>
-                <div>
-                  <div className={styles.statValue}>{stats?.totalJobs ?? 0}</div>
-                  <div className={styles.statLabel}>Active Jobs</div>
-                </div>
-              </div>
-              <div className={styles.statCard}>
-                <div className={styles.statIcon}><DollarSign className="text-yellow-600" /></div>
-                <div>
-                  <div className={styles.statValue}>{(stats?.totalRevenue ?? 0).toLocaleString()} RWF</div>
-                  <div className={styles.statLabel}>Platform Revenue</div>
-                </div>
-              </div>
-            </div>
+            ))}
 
-            {/* Live Feed + Role Breakdown Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Live Activity Feed */}
-              <div className="lg:col-span-2 bg-gray-900 rounded-3xl overflow-hidden shadow-2xl">
-                <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                    <h3 className="font-bold text-white">Live Activity Feed</h3>
-                  </div>
-                  <span className="text-xs text-gray-500 uppercase tracking-widest">Real-time</span>
-                </div>
-                <div ref={feedRef} className="h-80 overflow-y-auto p-4 space-y-3">
-                  {activityFeed.length === 0 && (
-                    <div className="text-gray-600 italic text-center py-8">
-                      No activity yet. Events will appear here in real-time.
-                    </div>
-                  )}
-                  {activityFeed.map((a, i) => (
-                    <div key={a.id || i} className="flex items-start gap-3 p-3 bg-gray-800/60 rounded-xl animate-in fade-in duration-500">
-                      <div className={`p-1.5 rounded-lg text-sm ${
-                        a.type === 'CERTIFICATE_ISSUED' ? 'bg-green-900/60 text-green-400' :
-                        a.type === 'JOB_APPLIED' ? 'bg-blue-900/60 text-blue-400' :
-                        a.type === 'USER_REGISTER' ? 'bg-purple-900/60 text-purple-400' :
-                        'bg-gray-700 text-gray-400'
-                      }`}>
-                        {a.type === 'CERTIFICATE_ISSUED' ? '🏆' :
-                         a.type === 'JOB_APPLIED' ? '💼' :
-                         a.type === 'USER_REGISTER' ? '👤' :
-                         a.type === 'ASSESSMENT_COMPLETED' ? '📋' : '⚡'}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-gray-200 text-sm leading-tight">{a.message}</p>
-                        <p className="text-gray-600 text-xs mt-1">{new Date(a.timestamp).toLocaleTimeString()}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            <div className={styles.feedCard}>
+              <div className={styles.feedHeader}>
+                <div className={styles.feedDot} /> Live Activity Feed
+                <span className={styles.feedTag}>Real-time</span>
               </div>
-
-              {/* User Role Breakdown */}
-              <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-3xl p-6 shadow-sm">
-                <h3 className="font-bold mb-6 flex items-center gap-2">
-                  <Shield size={18} className="text-blue-600" /> User Breakdown
-                </h3>
-                <div className="space-y-4">
-                  {[
-                    { label: 'Job Seekers', count: stats?.usersByRole?.candidates ?? 0, color: 'bg-blue-500' },
-                    { label: 'Employers', count: stats?.usersByRole?.employers ?? 0, color: 'bg-green-500' },
-                    { label: 'Instructors', count: stats?.usersByRole?.instructors ?? 0, color: 'bg-purple-500' },
-                    { label: 'Admins', count: stats?.usersByRole?.admins ?? 0, color: 'bg-red-500' },
-                  ].map(r => (
-                    <div key={r.label}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium text-gray-700 dark:text-gray-300">{r.label}</span>
-                        <span className="font-bold">{r.count}</span>
-                      </div>
-                      <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
-                        <div
-                          className={`${r.color} h-2 rounded-full transition-all duration-700`}
-                          style={{ width: `${stats?.totalUsers ? Math.round((r.count / stats.totalUsers) * 100) : 0}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 pt-6 border-t dark:border-gray-800">
-                  <div className="flex items-center justify-between text-sm mb-2">
-                    <span className="text-gray-500">Int'l Certificates</span>
-                    <span className="font-bold text-green-600">{stats?.totalInternationalCerts ?? 0} issued</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Assessments Taken</span>
-                    <span className="font-bold text-blue-600">{stats?.totalAssessmentsTaken ?? 0}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'users' && (
-          <div className={styles.card}>
-            <h2 className="flex items-center gap-2 mb-6 text-xl font-bold">
-              <Users size={24} className="text-blue-600" /> User Management
-            </h2>
-            <div className={styles.tableResp}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>User</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map(u => (
-                    <tr key={u.id}>
-                      <td>
-                        <strong>{u.name}</strong><br/>
-                        <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>ID: {u.id}</span>
-                      </td>
-                      <td>{u.email}</td>
-                      <td>
-                        <select
-                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                          value={u.role}
-                          onChange={(e) => updateUserRole(u.id, e.target.value)}
-                          disabled={u.id === user?.id}
-                        >
-                          <option value="jobseeker">Job Seeker</option>
-                          <option value="employer">Employer</option>
-                          <option value="instructor">Instructor</option>
-                          <option value="admin">Admin</option>
-                        </select>
-                      </td>
-                      <td>
-                        <button 
-                          className="text-red-600 hover:text-red-900 font-medium"
-                          onClick={() => deleteUser(u.id)}
-                          disabled={u.id === user?.id}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'verifications' && (
-          <div className={styles.card}>
-            <h2 className="flex items-center gap-2 mb-6 text-xl font-bold">
-              <CheckCircle size={24} className="text-green-600" /> Verification Queue
-            </h2>
-            <div className="space-y-4">
-              {verifications.length === 0 ? (
-                <div className="text-center py-8 text-gray-500 italic">No pending verifications.</div>
-              ) : verifications.map(v => (
-                <div key={v.id} className="border dark:border-gray-700 rounded-xl p-4 hover:shadow-md transition bg-gray-50 dark:bg-gray-900/40">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h4 className="font-bold text-gray-900 dark:text-white">{v.userName}</h4>
-                      <p className="text-sm text-blue-600 font-semibold">{v.skill}</p>
-                    </div>
-                    <span className="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded uppercase tracking-tighter">
-                      {v.status}
+              <div ref={feedRef} className={styles.feedBody}>
+                {activityFeed.length === 0 ? (
+                  <div className={styles.feedEmpty}>No activity yet. Events appear here in real-time.</div>
+                ) : activityFeed.map((a, i) => (
+                  <div key={a.id || i} className={styles.feedItem}>
+                    <span className={styles.feedEmoji}>
+                      {a.type === 'CERTIFICATE_ISSUED' ? '🏆' : a.type === 'JOB_APPLIED' ? '💼' : a.type === 'USER_REGISTER' ? '👤' : a.type === 'ASSESSMENT_COMPLETED' ? '📋' : '⚡'}
                     </span>
-                  </div>
-                  <div className="flex items-center justify-between mt-4">
-                    <span className="text-xs text-gray-500">{new Date(v.submittedAt).toLocaleDateString()}</span>
-                    <div className="flex gap-2">
-                      <button className="btn btn-secondary btn-sm">Preview Video</button>
-                      <button className="btn btn-primary btn-sm">Approve</button>
+                    <div>
+                      <p className={styles.feedMsg}>{a.message}</p>
+                      <p className={styles.feedTime}>{new Date(a.timestamp).toLocaleTimeString()}</p>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.roleCard}>
+              <div className={styles.roleTitle}><Shield size={16} /> User Breakdown</div>
+              {[
+                { label: 'Job Seekers', count: stats?.usersByRole?.candidates ?? 0, color: '#6366f1' },
+                { label: 'Employers',   count: stats?.usersByRole?.employers ?? 0,  color: '#10b981' },
+                { label: 'Instructors', count: stats?.usersByRole?.instructors ?? 0, color: '#f59e0b' },
+                { label: 'Admins',      count: stats?.usersByRole?.admins ?? 0,     color: '#ef4444' },
+              ].map(r => (
+                <div key={r.label} className={styles.roleRow}>
+                  <div className={styles.roleRowTop}>
+                    <span>{r.label}</span><strong>{r.count}</strong>
+                  </div>
+                  <div className={styles.roleBar}>
+                    <div className={styles.roleBarFill} style={{ width: `${stats?.totalUsers ? Math.round((r.count / stats.totalUsers) * 100) : 0}%`, background: r.color }} />
                   </div>
                 </div>
               ))}
@@ -358,25 +255,256 @@ export default function Admin() {
           </div>
         )}
 
-        {activeTab === 'monetization' && (
-          <div className={styles.card}>
-            <h2 className="flex items-center gap-2 mb-6 text-xl font-bold">
-              <DollarSign size={24} className="text-amber-500" /> Monetization Settings
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* ── USERS ── */}
+        {activeTab === 'users' && (
+          <div className={styles.panelCard}>
+            <div className={styles.panelHeader}>
+              <h2 className={styles.panelTitle}><Users size={20} /> User Management</h2>
+              <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap' }}>
+                <input
+                  className={styles.searchInput}
+                  placeholder="Search name or email…"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+                <select className={styles.filterSelect} value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
+                  <option value="all">All Roles</option>
+                  <option value="jobseeker">Job Seekers</option>
+                  <option value="employer">Employers</option>
+                  <option value="instructor">Instructors</option>
+                  <option value="admin">Admins</option>
+                </select>
+              </div>
+            </div>
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {filteredUsers.map(u => (
+                    <tr key={u.id} style={{ opacity: u.suspended ? 0.6 : 1 }}>
+                      <td>
+                        <div className={styles.userCell}>
+                          <div className={styles.userAvatar} style={{ background: roleColor[u.role] + '33', color: roleColor[u.role] }}>
+                            {u.name.split(' ').map((n: string) => n[0]).join('').slice(0,2)}
+                          </div>
+                          <div>
+                            <div className={styles.userName}>{u.name}</div>
+                            <div className={styles.userEmail}>{u.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <select
+                          className={styles.roleSelect}
+                          value={u.role}
+                          onChange={e => changeRole(u.id, e.target.value)}
+                          disabled={u.id === user?.id}
+                          style={{ borderColor: roleColor[u.role] + '66' }}
+                        >
+                          <option value="jobseeker">Job Seeker</option>
+                          <option value="employer">Employer</option>
+                          <option value="instructor">Instructor</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      </td>
+                      <td><StatusPill active={!u.suspended} /></td>
+                      <td className={styles.dateCell}>{new Date(u.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        <div className={styles.actionBtns}>
+                          <button
+                            className={`${styles.actionBtn} ${u.suspended ? styles.actionBtnGreen : styles.actionBtnAmber}`}
+                            onClick={() => toggleUserSuspend(u.id)}
+                            disabled={u.id === user?.id}
+                            title={u.suspended ? 'Reactivate' : 'Suspend'}
+                          >
+                            {u.suspended ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
+                            {u.suspended ? 'Activate' : 'Suspend'}
+                          </button>
+                          <button
+                            className={`${styles.actionBtn} ${styles.actionBtnRed}`}
+                            onClick={() => deleteUser(u.id)}
+                            disabled={u.id === user?.id}
+                            title="Delete user"
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filteredUsers.length === 0 && <div className={styles.emptyRow}>No users match your search.</div>}
+            </div>
+          </div>
+        )}
+
+        {/* ── COURSES ── */}
+        {activeTab === 'courses' && (
+          <div className={styles.panelCard}>
+            <div className={styles.panelHeader}>
+              <h2 className={styles.panelTitle}><BookOpen size={20} /> Course Management</h2>
+              <span className={styles.countBadge}>{courses.length} total</span>
+            </div>
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead><tr><th>Course</th><th>Instructor</th><th>Enrolled</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {courses.map(c => (
+                    <tr key={c.id} style={{ opacity: c.active ? 1 : 0.55 }}>
+                      <td>
+                        <div className={styles.userName}>{c.title}</div>
+                        <div className={styles.userEmail}>{c.description?.slice(0, 50)}…</div>
+                      </td>
+                      <td className={styles.dateCell}>{c.instructorName}</td>
+                      <td className={styles.dateCell}>{c.enrolledCount}</td>
+                      <td className={styles.dateCell}>${c.price}</td>
+                      <td><StatusPill active={c.active} /></td>
+                      <td>
+                        <button
+                          className={`${styles.actionBtn} ${c.active ? styles.actionBtnAmber : styles.actionBtnGreen}`}
+                          onClick={() => toggleCourse(c.id)}
+                        >
+                          {c.active ? <><ToggleLeft size={14} /> Deactivate</> : <><ToggleRight size={14} /> Activate</>}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {courses.length === 0 && <div className={styles.emptyRow}>No courses found.</div>}
+            </div>
+          </div>
+        )}
+
+        {/* ── TUTORIALS ── */}
+        {activeTab === 'tutorials' && (
+          <div className={styles.panelCard}>
+            <div className={styles.panelHeader}>
+              <h2 className={styles.panelTitle}><Video size={20} /> Community Tutorial Moderation</h2>
+              <span className={styles.countBadge}>{tutorials.length} total</span>
+            </div>
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead><tr><th>Tutorial</th><th>Author</th><th>Category</th><th>Views / Likes</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {tutorials.map(t => (
+                    <tr key={t.id} style={{ opacity: t.active ? 1 : 0.55 }}>
+                      <td>
+                        <div className={styles.userName}>{t.title}</div>
+                        <div className={styles.userEmail}>{t.level} · {t.language === 'rw' ? '🇷🇼 Kinyarwanda' : t.language === 'both' ? '🇷🇼 + EN' : 'English'}</div>
+                      </td>
+                      <td className={styles.dateCell}>{t.authorName}</td>
+                      <td className={styles.dateCell}>{t.category}</td>
+                      <td className={styles.dateCell}>👁 {t.views.toLocaleString()} · ❤️ {t.likes}</td>
+                      <td><StatusPill active={t.active} /></td>
+                      <td>
+                        <div className={styles.actionBtns}>
+                          <button
+                            className={`${styles.actionBtn} ${t.active ? styles.actionBtnAmber : styles.actionBtnGreen}`}
+                            onClick={() => toggleTutorial(t.id)}
+                          >
+                            {t.active ? <><ToggleLeft size={14} /> Hide</> : <><ToggleRight size={14} /> Show</>}
+                          </button>
+                          <button className={`${styles.actionBtn} ${styles.actionBtnRed}`} onClick={() => deleteTutorial(t.id)}>
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {tutorials.length === 0 && <div className={styles.emptyRow}>No tutorials found.</div>}
+            </div>
+          </div>
+        )}
+
+        {/* ── JOBS ── */}
+        {activeTab === 'jobs' && (
+          <div className={styles.panelCard}>
+            <div className={styles.panelHeader}>
+              <h2 className={styles.panelTitle}><Briefcase size={20} /> Job Listing Management</h2>
+              <span className={styles.countBadge}>{jobs.length} total</span>
+            </div>
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead><tr><th>Job</th><th>Company</th><th>Type</th><th>Applications</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {jobs.map(j => (
+                    <tr key={j.id} style={{ opacity: j.active ? 1 : 0.55 }}>
+                      <td>
+                        <div className={styles.userName}>{j.title}</div>
+                        <div className={styles.userEmail}>{j.location} {j.salary ? `· ${j.salary}` : ''}</div>
+                      </td>
+                      <td className={styles.dateCell}>{j.company}</td>
+                      <td className={styles.dateCell}><span className="badge badge-gray">{j.type}</span></td>
+                      <td className={styles.dateCell}>{j.applications}</td>
+                      <td><StatusPill active={j.active} /></td>
+                      <td>
+                        <div className={styles.actionBtns}>
+                          <button
+                            className={`${styles.actionBtn} ${j.active ? styles.actionBtnAmber : styles.actionBtnGreen}`}
+                            onClick={() => toggleJob(j.id)}
+                          >
+                            {j.active ? <><ToggleLeft size={14} /> Deactivate</> : <><ToggleRight size={14} /> Activate</>}
+                          </button>
+                          <button className={`${styles.actionBtn} ${styles.actionBtnRed}`} onClick={() => deleteJob(j.id)}>
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {jobs.length === 0 && <div className={styles.emptyRow}>No jobs found.</div>}
+            </div>
+          </div>
+        )}
+
+        {/* ── VERIFICATIONS ── */}
+        {activeTab === 'verifications' && (
+          <div className={styles.panelCard}>
+            <div className={styles.panelHeader}>
+              <h2 className={styles.panelTitle}><CheckCircle size={20} /> Verification Queue</h2>
+            </div>
+            {verifications.length === 0 ? (
+              <div className={styles.emptyRow}>No pending verifications.</div>
+            ) : verifications.map(v => (
+              <div key={v.id} className={styles.verifyRow}>
+                <div>
+                  <div className={styles.userName}>{v.userName}</div>
+                  <div className={styles.userEmail}>Skill: {v.skill} · {new Date(v.submittedAt).toLocaleDateString()}</div>
+                </div>
+                <div className={styles.actionBtns}>
+                  <span className={styles.pendingBadge}>⏳ {v.status}</span>
+                  <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`}>✓ Approve</button>
+                  <button className={`${styles.actionBtn} ${styles.actionBtnRed}`}>✕ Reject</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── SETTINGS ── */}
+        {activeTab === 'settings' && (
+          <div className={styles.panelCard}>
+            <div className={styles.panelHeader}>
+              <h2 className={styles.panelTitle}><DollarSign size={20} /> Monetization Settings</h2>
+            </div>
+            <div className={styles.settingsGrid}>
               {settings.map(s => (
-                <div key={s.key} className="p-6 bg-gray-100 dark:bg-gray-800 rounded-3xl">
-                  <label className="block text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">{s.description}</label>
-                  <div className="flex items-center gap-4">
-                    <input 
-                      type="number" 
-                      defaultValue={s.value} 
-                      className="flex-1 p-4 rounded-2xl bg-white dark:bg-gray-900 border dark:border-gray-700 text-lg font-bold"
-                      onBlur={(e) => updateSetting(s.key, Number(e.target.value))}
+                <div key={s.key} className={styles.settingCard}>
+                  <label className={styles.settingLabel}>{s.description}</label>
+                  <div className={styles.settingRow}>
+                    <input
+                      type="number"
+                      className={styles.settingInput}
+                      defaultValue={s.value}
+                      onBlur={e => updateSetting(s.key, Number(e.target.value))}
                     />
-                    <div className="text-xl font-bold text-blue-600">
-                      {s.key.includes('percent') ? '%' : 'USD'}
-                    </div>
+                    <span className={styles.settingUnit}>{s.key.includes('percent') ? '%' : 'RWF'}</span>
                   </div>
                 </div>
               ))}

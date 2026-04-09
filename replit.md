@@ -38,6 +38,7 @@ AI-powered skill verification and job matching platform for Rwanda.
 | `/leaderboard` | Token leaderboard (Ibarura) |
 | `/profile` | User credentials & history (requires auth) |
 | `/employer` | Employer dashboard: post jobs, verify credentials |
+| `/admin` | Admin portal: users, courses, tutorials, jobs, verifications, settings |
 
 ## Running
 
@@ -47,6 +48,7 @@ AI-powered skill verification and job matching platform for Rwanda.
 
 - Job Seeker: alice@example.com / password123
 - Employer: bob@employer.com / password123
+- Admin: bob@employer.com / password123 (role=admin in seed data)
 
 ## Colors
 
