@@ -277,6 +277,12 @@ export default function Profile() {
                   <div className="text-xs text-blue-500 font-mono truncate">{cert.blockchainTx}</div>
                 </div>
 
+                <div className={styles.sigLine}>
+                  <div className={styles.sigHandwriting}>Prof. Kalisa M.</div>
+                  <div className={styles.sigLabel}>Principal Instructor</div>
+                  <div className="text-[10px] text-gray-400 mt-1">Lead Scientist, Imihigo Labs</div>
+                </div>
+
                 <div className="flex items-center justify-between pt-4 border-t dark:border-gray-800">
                   <span className="text-xs text-gray-500">Issued {new Date(cert.issuedAt).toLocaleDateString()}</span>
                   <div className="flex gap-2">

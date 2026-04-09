@@ -112,6 +112,29 @@ router.put('/tutorials/:id/toggle', (req: Request, res: Response) => {
   res.json({ success: true, active: (tutorial as any).active })
 })
 
+router.post('/tutorials', (req: Request, res: Response) => {
+  const newTutorial = {
+    id: `t_${Date.now()}`,
+    authorId: 'admin',
+    authorName: 'Administrator',
+    title: req.body.title,
+    description: req.body.description,
+    category: req.body.category || 'General',
+    language: req.body.language || 'en',
+    likes: 0,
+    views: 0,
+    duration: '0m',
+    level: req.body.level || 'beginner',
+    tags: [],
+    createdAt: new Date().toISOString(),
+    thumbnailColor: '#6366f1',
+    videoUrl: req.body.videoUrl || '',
+    active: true
+  }
+  tutorialPosts.unshift(newTutorial as any)
+  res.json({ success: true, data: newTutorial })
+})
+
 router.delete('/tutorials/:id', (req: Request, res: Response) => {
   const idx = tutorialPosts.findIndex(t => t.id === req.params.id)
   if (idx === -1) return res.status(404).json({ success: false, message: 'Not found' })
@@ -148,6 +171,29 @@ router.delete('/jobs/:id', (req: Request, res: Response) => {
 // ── Skills / Assessments ──────────────────────────────────────
 router.get('/skills', (_req: Request, res: Response) => {
   res.json({ success: true, data: db.skills })
+})
+
+router.post('/skills', (req: Request, res: Response) => {
+  const newSkill = {
+    id: `s_${Date.now()}`,
+    name: req.body.name,
+    category: req.body.category || 'General',
+    level: req.body.level || 'beginner',
+    description: req.body.description,
+    icon: req.body.icon || '📜',
+    questionsCount: Number(req.body.questionsCount) || 5,
+  }
+  db.skills.push(newSkill as any)
+  saveDb()
+  res.json({ success: true, data: newSkill })
+})
+
+router.delete('/skills/:id', (req: Request, res: Response) => {
+  const idx = db.skills.findIndex(s => s.id === req.params.id)
+  if (idx === -1) return res.status(404).json({ success: false, message: 'Not found' })
+  db.skills.splice(idx, 1)
+  saveDb()
+  res.json({ success: true })
 })
 
 // ── Verifications ──────────────────────────────────────
@@ -296,6 +342,27 @@ router.get('/instructor-requests', (_req: Request, res: Response) => {
   res.json({ success: true, data: requests })
 })
 
+router.post('/instructor-requests', (req: Request, res: Response) => {
+  if (!(db as any).instructorRequests) (db as any).instructorRequests = []
+  
+  const newReq = {
+    id: `ir_${Date.now()}`,
+    userId: `u_${Date.now()}`,
+    name: req.body.name,
+    email: req.body.email,
+    qualification: req.body.qualification,
+    institution: req.body.institution,
+    specialties: req.body.specialties ? req.body.specialties.split(',').map((s:string) => s.trim()) : [],
+    yearsExperience: Number(req.body.yearsExperience) || 0,
+    status: 'pending',
+    submittedAt: new Date().toISOString(),
+  }
+  
+  ;(db as any).instructorRequests.unshift(newReq)
+  saveDb()
+  res.json({ success: true, data: newReq })
+})
+
 router.put('/instructor-requests/:id/approve', (req: Request, res: Response) => {
   if (!(db as any).instructorRequests) (db as any).instructorRequests = []
   const request = (db as any).instructorRequests.find((r: any) => r.id === req.params.id)
@@ -335,6 +402,29 @@ router.get('/course-approvals', (_req: Request, res: Response) => {
       return { ...c, instructorName: instructor?.name || 'Unknown', instructorEmail: instructor?.email }
     })
   res.json({ success: true, data: pending })
+})
+
+router.post('/course-approvals', (req: Request, res: Response) => {
+  const newCourse = {
+    id: `co_${Date.now()}`,
+    title: req.body.title,
+    description: req.body.description,
+    price: Number(req.body.price) || 0,
+    category: req.body.category || 'General',
+    level: req.body.level || 'beginner',
+    instructorId: `u_${Date.now()}`, 
+    instructorName: req.body.instructorName,
+    enrolledCount: 0,
+    lessons: [],
+    createdAt: new Date().toISOString(),
+    status: 'pending_approval',
+    active: false,
+    certificateFee: 0,
+    platformFeePercent: 0.01
+  }
+  db.courses.unshift(newCourse as any)
+  saveDb()
+  res.json({ success: true, data: newCourse })
 })
 
 router.put('/course-approvals/:id/approve', (req: Request, res: Response) => {

@@ -194,9 +194,10 @@ export interface CodingChallenge {
   difficulty: 'easy' | 'medium' | 'hard'
   language: string
   starterCode: string
-  testCases: TestCase[]
-  timeLimit: number // in minutes
+  testCases: { input: any[]; expectedOutput: any; isHidden: boolean }[]
+  timeLimit: number
   points: number
+  functionName: string
 }
 
 export interface CodeSubmission {
@@ -468,7 +469,8 @@ const codeChallenges: CodingChallenge[] = [
       { input: [-1, 1], expectedOutput: 0, isHidden: true }
     ],
     timeLimit: 5,
-    points: 10
+    points: 10,
+    functionName: 'sum'
   }
 ]
 
@@ -549,7 +551,12 @@ const defaultDb = {
   apiKeys,
   jobApplications: [] as JobApplication[],
   activities: [] as any[],
-  gamificationProfiles: [] as GamificationProfile[],
+  gamificationProfiles: [
+    { userId: 'u1', level: 12, xp: 12450, xpToNextLevel: 1500, badges: [{}, {}, {}], coins: 450, streak: 5, lastLoginDate: new Date().toISOString(), statistics: { totalAssessments: 14, perfectScores: 8, coursesCompleted: 3, certificatesEarned: 2, jobsApplied: 1 } },
+    { userId: 'u2', level: 8, xp: 8200, xpToNextLevel: 1200, badges: [{}, {}], coins: 320, streak: 3, lastLoginDate: new Date().toISOString(), statistics: { totalAssessments: 9, perfectScores: 4, coursesCompleted: 1, certificatesEarned: 1, jobsApplied: 5 } },
+    { userId: 'u3', level: 15, xp: 18900, xpToNextLevel: 2000, badges: [{}, {}, {}, {}], coins: 890, streak: 12, lastLoginDate: new Date().toISOString(), statistics: { totalAssessments: 22, perfectScores: 15, coursesCompleted: 5, certificatesEarned: 4, jobsApplied: 2 } },
+    { userId: 'u4', level: 5, xp: 4100, xpToNextLevel: 1000, badges: [{}], coins: 150, streak: 1, lastLoginDate: new Date().toISOString(), statistics: { totalAssessments: 4, perfectScores: 1, coursesCompleted: 0, certificatesEarned: 0, jobsApplied: 3 } },
+  ] as GamificationProfile[],
   enrollments: [] as CourseEnrollment[],
   instructorRequests,
 }
@@ -563,7 +570,7 @@ if (fs.existsSync(DB_FILE)) {
     const saved = JSON.parse(data)
     db = {
       ...defaultDb,
-      ...saved,
+      gamificationProfiles: (saved.gamificationProfiles && saved.gamificationProfiles.length > 0) ? saved.gamificationProfiles : defaultDb.gamificationProfiles,
       enrollments: saved.enrollments || [],
       instructorRequests: saved.instructorRequests || instructorRequests,
       courses: (saved.courses || courses).map((c: any) => ({
@@ -576,7 +583,9 @@ if (fs.existsSync(DB_FILE)) {
         ...j,
       })),
     }
-    console.log('✅ Mock Database loaded from persistence.')
+    // Persist defaults if they were used
+    saveDb()
+    console.log('✅ Mock Database loaded from persistence (merged).')
   } catch (e) {
     console.error('❌ Failed to load persistence, using defaults.')
   }

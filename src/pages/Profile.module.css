@@ -103,3 +103,19 @@
 }
 .editBtn:hover { color: #f9fafb; }
 
+.sigLine {
+  display: flex; flex-direction: column; align-items: flex-end;
+  border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.5rem;
+  margin-top: 1.5rem; width: 100%;
+}
+
+.sigHandwriting {
+  font-family: 'Dancing Script', cursive; font-size: 1.6rem;
+  color: #6366f1; margin-bottom: -0.4rem;
+}
+
+.sigLabel {
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+  color: #6b7280; letter-spacing: 0.05em;
+}
+

@@ -16,7 +16,7 @@ export default function Assessment() {
   const { id } = useParams<{ id: string }>()
   const [params] = useSearchParams()
   const skillId = params.get('skillId')
-  const { token } = useAuth()
+  const { token, refreshUser } = useAuth()
   const navigate = useNavigate()
 
   const [questions, setQuestions] = useState<Question[]>([])
@@ -46,7 +46,10 @@ export default function Assessment() {
     })
     const data = await res.json()
     setResult({ score: data.score, passed: data.passed })
-  }, [token, id, answers, submitting])
+    if (data.passed) {
+      await refreshUser()
+    }
+  }, [token, id, answers, submitting, refreshUser])
 
   useEffect(() => {
     if (!questions.length || result) return

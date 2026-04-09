@@ -21,7 +21,7 @@ interface Stats {
   activeCourses: number
 }
 
-type Tab = 'overview' | 'users' | 'courses' | 'instructor-approvals' | 'course-approvals' | 'tutorials' | 'jobs' | 'verifications' | 'terms' | 'settings'
+type Tab = 'overview' | 'users' | 'courses' | 'instructor-approvals' | 'course-approvals' | 'tutorials' | 'assignments' | 'jobs' | 'verifications' | 'terms' | 'settings'
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'overview',             label: 'Overview',            icon: <Activity size={15} /> },
@@ -30,6 +30,7 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'instructor-approvals', label: 'Instructors',         icon: <GraduationCap size={15} /> },
   { id: 'course-approvals',     label: 'Course Queue',        icon: <Clock size={15} /> },
   { id: 'tutorials',            label: 'Tutorials',           icon: <Video size={15} /> },
+  { id: 'assignments',          label: 'Assignments',         icon: <FileText size={15} /> },
   { id: 'jobs',                 label: 'Jobs',                icon: <Briefcase size={15} /> },
   { id: 'verifications',        label: 'Verifications',       icon: <CheckCircle size={15} /> },
   { id: 'terms',                label: 'T&C Compliance',      icon: <FileText size={15} /> },
@@ -71,6 +72,7 @@ export default function Admin() {
   const [tcFilter, setTcFilter] = useState<'all' | 'accepted' | 'pending'>('all')
   const [instructorRequests, setInstructorRequests] = useState<any[]>([])
   const [courseApprovals, setCourseApprovals] = useState<any[]>([])
+  const [skills, setSkills] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
@@ -83,6 +85,19 @@ export default function Admin() {
   const [showJobModal, setShowJobModal] = useState(false)
   const [editingJob, setEditingJob] = useState<any>(null)
   const [jobForm, setJobForm] = useState({ title: '', company: '', location: 'Kigali, Rwanda', type: 'full-time', salary: '', description: '' })
+
+  const [showInstructorModal, setShowInstructorModal] = useState(false)
+  const [instructorForm, setInstructorForm] = useState({ name: '', email: '', qualification: '', institution: '', specialties: '', yearsExperience: '0' })
+
+  const [showQueueModal, setShowQueueModal] = useState(false)
+  const [queueForm, setQueueForm] = useState({ title: '', description: '', instructorName: '', category: 'General', level: 'beginner', price: '0' })
+
+  const [showTutorialModal, setShowTutorialModal] = useState(false)
+  const [tutorialForm, setTutorialForm] = useState({ title: '', description: '', category: 'Programming', level: 'beginner', language: 'en', videoUrl: '' })
+
+  const [showSkillModal, setShowSkillModal] = useState(false)
+  const [skillForm, setSkillForm] = useState({ name: '', category: 'Programming', level: 'beginner', description: '', icon: '📜', questionsCount: '5' })
+
 
   useEffect(() => {
     if (!token) return
@@ -98,10 +113,11 @@ export default function Admin() {
       api.get('/admin/terms-compliance'),
       api.get('/admin/instructor-requests'),
       api.get('/admin/course-approvals'),
-    ]).then(([st, us, co, tu, jo, ve, se, ac, tc, ir, ca]) => {
+      api.get('/admin/skills'),
+    ]).then(([st, us, co, tu, jo, ve, se, ac, tc, ir, ca, sk]) => {
       if (st.data.success) setStats(st.data.data)
       if (us.data.success) setUsers(us.data.data)
-      if (co.data.success) setCourses(co.data.data)
+      if (co.data.success) setCourses(us.data.success ? co.data.data : []) // safer check
       if (tu.data.success) setTutorials(tu.data.data)
       if (jo.data.success) setJobs(jo.data.data)
       if (ve.data.success) setVerifications(ve.data.data)
@@ -110,6 +126,7 @@ export default function Admin() {
       if (tc.data.success) { setTcUsers(tc.data.data); setTcStats(tc.data.stats) }
       if (ir.data.success) setInstructorRequests(ir.data.data)
       if (ca.data.success) setCourseApprovals(ca.data.data)
+      if (sk?.data?.success) setSkills(sk.data.data)
     }).catch(console.error).finally(() => setLoading(false))
   }, [token])
 
@@ -268,6 +285,58 @@ export default function Admin() {
   async function rejectVerification(id: string) {
     await api.put(`/admin/verifications/${id}/reject`, {})
     setVerifications(vs => vs.map(v => v.id === id ? { ...v, status: 'rejected' } : v))
+  }
+
+  async function saveInstructor() {
+    const res = await api.post('/admin/instructor-requests', instructorForm)
+    if (res.data.success) {
+      setInstructorRequests(rs => [res.data.data, ...rs])
+      setShowInstructorModal(false)
+    }
+  }
+
+  async function saveQueue() {
+    const res = await api.post('/admin/course-approvals', queueForm)
+    if (res.data.success) {
+      setCourseApprovals(cs => [res.data.data, ...cs])
+      setShowQueueModal(false)
+    }
+  }
+
+  async function saveTutorial() {
+    if (!tutorialForm.title) return alert('Tutorial title is required.')
+    try {
+      const res = await api.post('/admin/tutorials', tutorialForm)
+      if (res.data.success) {
+        setTutorials(ts => [res.data.data, ...ts])
+        setShowTutorialModal(false)
+        setTutorialForm({ title: '', description: '', category: 'Programming', level: 'beginner', language: 'en', videoUrl: '' })
+      }
+    } catch (err) {
+      alert('Failed to save tutorial. Please try again.')
+    }
+  }
+
+  async function saveSkill() {
+    if (!skillForm.name) return alert('Skill name is required.')
+    try {
+      const res = await api.post('/admin/skills', skillForm)
+      if (res.data.success) {
+        setSkills(ss => [res.data.data, ...ss])
+        setShowSkillModal(false)
+        setSkillForm({ name: '', category: 'Programming', level: 'beginner', description: '', icon: '📜', questionsCount: '5' })
+      }
+    } catch (err) {
+      alert('Failed to save skill assignment. Please try again.')
+    }
+  }
+
+  async function deleteSkill(id: string) {
+    if (!confirm('Permanently delete this skill assessment?')) return
+    const res = await api.delete(`/admin/skills/${id}`)
+    if (res.data.success) {
+      setSkills(ss => ss.filter(s => s.id !== id))
+    }
   }
 
   if (loading) return <div className="page" style={{ display:'flex', justifyContent:'center', alignItems:'center' }}><div className="spinner" /></div>
@@ -516,7 +585,12 @@ export default function Admin() {
           <div className={styles.panelCard}>
             <div className={styles.panelHeader}>
               <h2 className={styles.panelTitle}><Video size={20} /> Community Tutorial Moderation</h2>
-              <span className={styles.countBadge}>{tutorials.length} total</span>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <span className={styles.countBadge}>{tutorials.length} total</span>
+                <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={() => setShowTutorialModal(true)}>
+                  <Plus size={14} /> New Tutorial
+                </button>
+              </div>
             </div>
             <div className={styles.tableWrap}>
               <table className={styles.table}>
@@ -550,6 +624,47 @@ export default function Admin() {
                 </tbody>
               </table>
               {tutorials.length === 0 && <div className={styles.emptyRow}>No tutorials found.</div>}
+            </div>
+          </div>
+        )}
+
+        {/* ── ASSIGNMENTS (SKILLS) ── */}
+        {activeTab === 'assignments' && (
+          <div className={styles.panelCard}>
+            <div className={styles.panelHeader}>
+              <h2 className={styles.panelTitle}><FileText size={20} /> Skill Assignment Management</h2>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <span className={styles.countBadge}>{skills.length} total</span>
+                <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={() => setShowSkillModal(true)}>
+                  <Plus size={14} /> New Assignment
+                </button>
+              </div>
+            </div>
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead><tr><th>Skill/Assignment</th><th>Category</th><th>Level</th><th>Questions</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {skills.map(s => (
+                    <tr key={s.id}>
+                      <td>
+                        <div className={styles.userName}>{s.icon} {s.name}</div>
+                        <div className={styles.userEmail}>{s.description?.slice(0, 60)}{s.description?.length > 60 ? '…' : ''}</div>
+                      </td>
+                      <td className={styles.dateCell}>{s.category}</td>
+                      <td className={styles.dateCell}><span className="badge badge-gray">{s.level}</span></td>
+                      <td className={styles.dateCell}>{s.questionsCount}</td>
+                      <td>
+                        <div className={styles.actionBtns}>
+                          <button className={`${styles.actionBtn} ${styles.actionBtnRed}`} onClick={() => deleteSkill(s.id)}>
+                            <Trash2 size={13} /> Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {skills.length === 0 && <div className={styles.emptyRow}>No skill assignments found.</div>}
             </div>
           </div>
         )}
@@ -607,7 +722,12 @@ export default function Admin() {
           <div className={styles.panelCard}>
             <div className={styles.panelHeader}>
               <h2 className={styles.panelTitle}><GraduationCap size={20} /> Instructor Applications</h2>
-              <span className={styles.countBadge}>{instructorRequests.filter(r => r.status === 'pending').length} pending</span>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <span className={styles.countBadge}>{instructorRequests.filter(r => r.status?.toLowerCase() === 'pending').length} pending</span>
+                <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={() => setShowInstructorModal(true)}>
+                  <Plus size={14} /> New Instructor
+                </button>
+              </div>
             </div>
             {instructorRequests.length === 0 ? (
               <div className={styles.emptyRow}>No instructor applications yet.</div>
@@ -642,7 +762,12 @@ export default function Admin() {
           <div className={styles.panelCard}>
             <div className={styles.panelHeader}>
               <h2 className={styles.panelTitle}><Clock size={20} /> Course Approval Queue</h2>
-              <span className={styles.countBadge}>{courseApprovals.length} pending</span>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <span className={styles.countBadge}>{courseApprovals.length} pending</span>
+                <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={() => setShowQueueModal(true)}>
+                  <Plus size={14} /> Add to Queue
+                </button>
+              </div>
             </div>
             {courseApprovals.length === 0 ? (
               <div className={styles.emptyRow}>No courses pending approval.</div>
@@ -681,10 +806,10 @@ export default function Admin() {
                   <div className={styles.userEmail}>Skill: {v.skill} · {new Date(v.submittedAt).toLocaleDateString()}</div>
                 </div>
                 <div className={styles.actionBtns}>
-                  <span className={styles.pendingBadge} style={{ background: v.status === 'approved' ? 'rgba(16,185,129,0.15)' : v.status === 'rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)', color: v.status === 'approved' ? '#10b981' : v.status === 'rejected' ? '#ef4444' : '#f59e0b' }}>
-                    {v.status === 'approved' ? '✓ Approved' : v.status === 'rejected' ? '✕ Rejected' : '⏳ Pending'}
+                  <span className={styles.pendingBadge} style={{ background: v.status?.toLowerCase() === 'approved' ? 'rgba(16,185,129,0.15)' : v.status?.toLowerCase() === 'rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)', color: v.status?.toLowerCase() === 'approved' ? '#10b981' : v.status?.toLowerCase() === 'rejected' ? '#ef4444' : '#f59e0b' }}>
+                    {v.status?.toLowerCase() === 'approved' ? '✓ Approved' : v.status?.toLowerCase() === 'rejected' ? '✕ Rejected' : '⏳ Pending'}
                   </span>
-                  {v.status === 'pending' && <>
+                  {v.status?.toLowerCase() === 'pending' && <>
                     <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={() => approveVerification(v.id)}>✓ Approve</button>
                     <button className={`${styles.actionBtn} ${styles.actionBtnRed}`} onClick={() => rejectVerification(v.id)}>✕ Reject</button>
                   </>}
@@ -944,6 +1069,164 @@ export default function Admin() {
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
               <button className={styles.actionBtn} onClick={() => setShowJobModal(false)}>Cancel</button>
               <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={saveJob}>{editingJob ? 'Save Changes' : 'Create Job'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── INSTRUCTOR MODAL ── */}
+      {showInstructorModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={e => e.target === e.currentTarget && setShowInstructorModal(false)}>
+          <div style={{ background: 'var(--bg-card, #1e2235)', borderRadius: '1.5rem', padding: '2rem', width: '100%', maxWidth: '560px', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem' }}>Create Instructor Application</h3>
+              <button onClick={() => setShowInstructorModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+            </div>
+            {[
+              { label: 'Name', key: 'name', type: 'text' },
+              { label: 'Email', key: 'email', type: 'text' },
+              { label: 'Qualification', key: 'qualification', type: 'text' },
+              { label: 'Institution', key: 'institution', type: 'text' },
+              { label: 'Specialties (comma-separated)', key: 'specialties', type: 'text' },
+              { label: 'Years of Experience', key: 'yearsExperience', type: 'number' },
+            ].map(f => (
+              <div key={f.key} style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{f.label}</label>
+                <input type={f.type} value={(instructorForm as any)[f.key]} onChange={e => setInstructorForm(p => ({ ...p, [f.key]: e.target.value }))} className={styles.searchInput} style={{ width: '100%' }} />
+              </div>
+            ))}
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+              <button className={styles.actionBtn} onClick={() => setShowInstructorModal(false)}>Cancel</button>
+              <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={saveInstructor}>Submit</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── COURSE QUEUE MODAL ── */}
+      {showQueueModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={e => e.target === e.currentTarget && setShowQueueModal(false)}>
+          <div style={{ background: 'var(--bg-card, #1e2235)', borderRadius: '1.5rem', padding: '2rem', width: '100%', maxWidth: '560px', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem' }}>Add Course to Queue</h3>
+              <button onClick={() => setShowQueueModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+            </div>
+            {[
+              { label: 'Course Title', key: 'title', type: 'text' },
+              { label: 'Description', key: 'description', type: 'textarea' },
+              { label: 'Instructor Name', key: 'instructorName', type: 'text' },
+              { label: 'Category', key: 'category', type: 'text' },
+              { label: 'Price (RWF)', key: 'price', type: 'number' },
+            ].map(f => (
+              <div key={f.key} style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{f.label}</label>
+                {f.type === 'textarea' ? (
+                  <textarea rows={3} value={(queueForm as any)[f.key]} onChange={e => setQueueForm(p => ({ ...p, [f.key]: e.target.value }))} className={styles.searchInput} style={{ width: '100%', resize: 'vertical' }} />
+                ) : (
+                  <input type={f.type} value={(queueForm as any)[f.key]} onChange={e => setQueueForm(p => ({ ...p, [f.key]: e.target.value }))} className={styles.searchInput} style={{ width: '100%' }} />
+                )}
+              </div>
+            ))}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Level</label>
+              <select value={queueForm.level} onChange={e => setQueueForm(p => ({ ...p, level: e.target.value }))} className={styles.filterSelect} style={{ width: '100%' }}>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button className={styles.actionBtn} onClick={() => setShowQueueModal(false)}>Cancel</button>
+              <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={saveQueue}>Add to Queue</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TUTORIAL MODAL ── */}
+      {showTutorialModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={e => e.target === e.currentTarget && setShowTutorialModal(false)}>
+          <div style={{ background: 'var(--bg-card, #1e2235)', borderRadius: '1.5rem', padding: '2rem', width: '100%', maxWidth: '560px', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem' }}>Create New Tutorial</h3>
+              <button onClick={() => setShowTutorialModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+            </div>
+            {[
+              { label: 'Title', key: 'title', type: 'text' },
+              { label: 'Description', key: 'description', type: 'textarea' },
+              { label: 'Category', key: 'category', type: 'text' },
+              { label: 'Video URL', key: 'videoUrl', type: 'text' },
+            ].map(f => (
+              <div key={f.key} style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{f.label}</label>
+                {f.type === 'textarea' ? (
+                  <textarea rows={3} value={(tutorialForm as any)[f.key]} onChange={e => setTutorialForm(p => ({ ...p, [f.key]: e.target.value }))} className={styles.searchInput} style={{ width: '100%', resize: 'vertical' }} />
+                ) : (
+                  <input type={f.type} value={(tutorialForm as any)[f.key]} onChange={e => setTutorialForm(p => ({ ...p, [f.key]: e.target.value }))} className={styles.searchInput} style={{ width: '100%' }} />
+                )}
+              </div>
+            ))}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Level</label>
+                <select value={tutorialForm.level} onChange={e => setTutorialForm(p => ({ ...p, level: e.target.value }))} className={styles.filterSelect} style={{ width: '100%' }}>
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Language</label>
+                <select value={tutorialForm.language} onChange={e => setTutorialForm(p => ({ ...p, language: e.target.value as any }))} className={styles.filterSelect} style={{ width: '100%' }}>
+                  <option value="en">English</option>
+                  <option value="rw">Kinyarwanda</option>
+                  <option value="both">Both</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button className={styles.actionBtn} onClick={() => setShowTutorialModal(false)}>Cancel</button>
+              <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={saveTutorial}>Create Tutorial</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── SKILL MODAL ── */}
+      {showSkillModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={e => e.target === e.currentTarget && setShowSkillModal(false)}>
+          <div style={{ background: 'var(--bg-card, #1e2235)', borderRadius: '1.5rem', padding: '2rem', width: '100%', maxWidth: '560px', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem' }}>Create New Skill Assignment</h3>
+              <button onClick={() => setShowSkillModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+            </div>
+            {[
+              { label: 'Skill Name', key: 'name', type: 'text' },
+              { label: 'Category', key: 'category', type: 'text' },
+              { label: 'Description', key: 'description', type: 'textarea' },
+              { label: 'Icon (Emoji)', key: 'icon', type: 'text' },
+              { label: 'Questions Count', key: 'questionsCount', type: 'number' },
+            ].map(f => (
+              <div key={f.key} style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{f.label}</label>
+                {f.type === 'textarea' ? (
+                  <textarea rows={3} value={(skillForm as any)[f.key]} onChange={e => setSkillForm(p => ({ ...p, [f.key]: e.target.value }))} className={styles.searchInput} style={{ width: '100%', resize: 'vertical' }} />
+                ) : (
+                  <input type={f.type} value={(skillForm as any)[f.key]} onChange={e => setSkillForm(p => ({ ...p, [f.key]: e.target.value }))} className={styles.searchInput} style={{ width: '100%' }} />
+                )}
+              </div>
+            ))}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Level</label>
+              <select value={skillForm.level} onChange={e => setSkillForm(p => ({ ...p, level: e.target.value }))} className={styles.filterSelect} style={{ width: '100%' }}>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button className={styles.actionBtn} onClick={() => setShowSkillModal(false)}>Cancel</button>
+              <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={saveSkill}>Create Assignment</button>
             </div>
           </div>
         </div>

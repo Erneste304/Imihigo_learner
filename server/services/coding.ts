@@ -25,10 +25,9 @@ export const codingService = {
 
     for (const test of challenge.testCases) {
       try {
-        // Safe evaluation path using new Function sandbox (client-side style logic on server)
-        // Note: For real production, we'd use 'isolated-vm' or a Docker runner.
-        const runner = new Function('a', 'b', `${code}; return sum(a, b);`)
-        const output = runner(test.input[0], test.input[1])
+        // Safe evaluation path using new Function sandbox
+        const runner = new Function(...(challenge.testCases[0].input.map((_, i) => `arg${i}`)), `${code}; return ${challenge.functionName}(${challenge.testCases[0].input.map((_, i) => `arg${i}`).join(', ')});`)
+        const output = runner(...test.input)
         const passed = JSON.stringify(output) === JSON.stringify(test.expectedOutput)
         
         if (passed) passedTests++

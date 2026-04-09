@@ -51,8 +51,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
+  async function refreshUser() {
+    if (!token) return
+    const res = await fetch('/api/users/me', { headers: { Authorization: `Bearer ${token}` } })
+    if (res.ok) {
+      const data = await res.json()
+      setUser(data)
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout, refreshUser, loading }}>
       {children}
     </AuthContext.Provider>
   )

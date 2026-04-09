@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import Editor from '@monaco-editor/react'
 import { api } from '../services/api'
-import { Code, Play, CheckCircle, AlertCircle, Terminal, Loader, Mic, Bot, XCircle } from 'lucide-react'
+import { Code, Play, CheckCircle, AlertCircle, Terminal, Loader, Mic, Bot, XCircle, Sparkles } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
+import styles from './CodingLab.module.css'
 
 interface Challenge {
   id: string
@@ -23,6 +25,7 @@ export default function CodingLab() {
   const [isListening, setIsListening] = useState(false)
   const [mentorResponse, setMentorResponse] = useState<string | null>(null)
   const { t } = useLang()
+  const { refreshUser } = useAuth()
 
   useEffect(() => {
     api.get('/coding/challenges')
@@ -40,6 +43,7 @@ export default function CodingLab() {
     setSelectedChallenge(ch)
     setCode(ch.starterCode)
     setResults(null)
+    setMentorResponse(null)
   }
 
   const runCode = async () => {
@@ -51,6 +55,9 @@ export default function CodingLab() {
         code
       })
       setResults(res.data.data)
+      if (res.data.data.allPassed) {
+        await refreshUser()
+      }
     } catch (err) {
       alert('Evaluation failed')
     } finally {
@@ -65,7 +72,7 @@ export default function CodingLab() {
     }
 
     const recognition = new (window as any).webkitSpeechRecognition()
-    recognition.lang = 'en-US' // Standard for mix, but we can detect Kinyarwanda rhythm
+    recognition.lang = 'en-US'
     recognition.interimResults = false
     recognition.maxAlternatives = 1
 
@@ -91,150 +98,175 @@ export default function CodingLab() {
     recognition.start()
   }
 
-  if (loading) return <div className="page flex justify-center py-20"><div className="spinner" /></div>
+  if (loading) return <div className="page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}><div className="spinner" /></div>
 
   return (
-    <div className="page" style={{ maxWidth: '1400px' }}>
-      <header className="mb-8 border-b dark:border-gray-800 pb-6">
-        <div className="flex items-center gap-3 text-blue-600 mb-2">
-          <Terminal size={24} />
-          <span className="font-bold tracking-widest uppercase text-xs">Innovation Lab</span>
+    <div className={styles.container}>
+      <header className={styles.header}>
+        <div className={styles.titleGroup}>
+          <div className={styles.subtitle}>
+            <Terminal size={14} /> Innovation Lab
+          </div>
+          <h1>Live Coding Environment</h1>
         </div>
-        <h1 className="text-3xl font-bold dark:text-white">Live Coding Environment</h1>
+        <div style={{ color: 'var(--text3)', fontSize: '0.8rem', fontWeight: 600 }}>
+          {selectedChallenge?.language.toUpperCase()} ENGINE v1.0
+        </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 h-[700px]">
+      <main className={styles.mainGrid}>
         {/* Sidebar: Challenges */}
-        <div className="bg-white dark:bg-gray-900 rounded-3xl border dark:border-gray-800 overflow-hidden flex flex-col">
-          <div className="p-6 border-b dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-            <h2 className="font-bold flex items-center gap-2">
-              <Code size={18} /> Challenges
-            </h2>
+        <aside className={styles.sidebar}>
+          <div className={styles.sidebarHeader}>
+            <Code size={18} className="text-primary" />
+            <h2>Coding Challenges</h2>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className={styles.challengeList}>
             {challenges.map(ch => (
               <button
                 key={ch.id}
                 onClick={() => selectChallenge(ch)}
-                className={`w-full text-left p-4 rounded-2xl transition-all ${
-                  selectedChallenge?.id === ch.id 
-                    ? 'bg-blue-600 text-white shadow-lg' 
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
-                }`}
+                className={`${styles.challengeItem} ${selectedChallenge?.id === ch.id ? styles.challengeItemActive : ''}`}
               >
-                <div className="font-bold mb-1 truncate">{ch.title}</div>
-                <div className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full inline-block ${
-                  selectedChallenge?.id === ch.id ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-700'
-                }`}>
+                <div className={styles.challengeTitle}>{ch.title}</div>
+                <div className={`${styles.diffBadge} ${styles[ch.difficulty]}`}>
                   {ch.difficulty}
                 </div>
               </button>
             ))}
           </div>
-        </div>
+        </aside>
 
         {/* Editor Area */}
-        <div className="lg:col-span-3 flex flex-col gap-6">
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
-            {/* Description & Output */}
-            <div className="flex flex-col gap-6 h-full overflow-hidden">
-              <div className="bg-white dark:bg-gray-900 rounded-3xl border dark:border-gray-800 p-6 flex-1 overflow-y-auto shadow-sm">
-                <h3 className="text-xl font-bold mb-4 dark:text-white">{selectedChallenge?.title}</h3>
-                <div className="prose dark:prose-invert text-sm text-gray-600 dark:text-gray-400">
-                  {selectedChallenge?.description}
-                </div>
-              </div>
-
-              <div className="bg-gray-900 rounded-3xl p-6 h-64 overflow-y-auto font-mono text-sm shadow-xl">
-                <div className="flex items-center justify-between mb-4 border-b border-gray-800 pb-2">
-                  <span className="text-gray-500 uppercase text-[10px] font-bold tracking-widest">Compiler Output</span>
-                  {results && (
-                    <span className={results.success ? 'text-green-500' : 'text-red-500'}>
-                      {results.success ? 'PASSED' : 'FAILED'}
-                    </span>
-                  )}
-                </div>
-                {results ? (
-                  <div className="space-y-4">
-                    {results.results.map((r: any, i: number) => (
-                      <div key={i} className="flex gap-3">
-                        {r.passed ? <CheckCircle className="text-green-500 mt-1" size={14} /> : <AlertCircle className="text-red-500 mt-1" size={14} />}
-                        <div>
-                          <p className="text-gray-400">Test Case {i + 1}: {r.passed ? 'Success' : 'Fail'}</p>
-                          {!r.passed && (
-                            <p className="text-red-400 text-xs mt-1">Expected: {r.expected} | Got: {r.actual || r.error}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-gray-600 italic">Run your code to see results...</div>
-                )}
-              </div>
+        <section className={styles.editorContainer}>
+          <div className={styles.editorHeader}>
+            <div className={styles.fileName}>
+              <Code size={14} /> solution.js
             </div>
-
-            {/* Monaco Editor */}
-            <div className="bg-white dark:bg-gray-900 rounded-3xl border dark:border-gray-800 overflow-hidden flex flex-col shadow-sm">
-              <div className="p-4 border-b dark:border-gray-800 flex items-center justify-between bg-gray-50 dark:bg-gray-800/30">
-                <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">solution.js</div>
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={handleVoiceHelp}
-                    disabled={isListening}
-                    className={`btn btn-sm flex items-center gap-2 ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-green-600 text-white'}`}
-                  >
-                    <Mic size={14} />
-                    {isListening ? 'Listening...' : 'Voice Guidance'}
-                  </button>
-                  <button 
-                    onClick={runCode}
-                    disabled={evaluating}
-                    className="btn btn-primary btn-sm flex items-center gap-2"
-                  >
-                    {evaluating ? <Loader className="animate-spin" size={14} /> : <Play size={14} fill="currentColor" />}
-                    Run Tests
-                  </button>
-                </div>
-              </div>
-              
-              {/* Mentor Chat Bubble */}
-              {mentorResponse && (
-                <div className="absolute top-20 left-10 right-10 z-20 bg-blue-900/95 text-white p-6 rounded-3xl border border-blue-400 shadow-2xl backdrop-blur-md animate-in slide-in-from-top-4 duration-300">
-                  <div className="flex items-start gap-4">
-                    <div className="p-2 bg-blue-500 rounded-xl">
-                      <Bot size={24} />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-blue-200 mb-1 flex items-center justify-between">
-                        AI Coding Tutor (Kinyarwanda)
-                        <button onClick={() => setMentorResponse(null)} className="text-blue-300 hover:text-white">
-                          <XCircle size={20} />
-                        </button>
-                      </h4>
-                      <p className="text-sm leading-relaxed">{mentorResponse}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div className="flex-1">
-                <Editor
-                  height="100%"
-                  defaultLanguage="javascript"
-                  theme="vs-dark"
-                  value={code}
-                  onChange={(val) => setCode(val || '')}
-                  options={{
-                    minimap: { enabled: false },
-                    fontSize: 14,
-                    padding: { top: 20 },
-                  }}
-                />
-              </div>
+            <div className={styles.controls}>
+              <button 
+                onClick={handleVoiceHelp}
+                disabled={isListening}
+                className={`btn btn-sm ${isListening ? `btn-danger ${styles.pulse}` : 'btn-secondary'}`}
+                style={{ borderRadius: '12px' }}
+              >
+                <Mic size={14} />
+                {isListening ? 'Listening...' : 'Voice Guidance'}
+              </button>
+              <button 
+                onClick={runCode}
+                disabled={evaluating}
+                className="btn btn-primary btn-sm"
+                style={{ borderRadius: '12px', paddingLeft: '1.2rem', paddingRight: '1.2rem' }}
+              >
+                {evaluating ? <Loader className="animate-spin" size={14} /> : <Play size={14} fill="currentColor" />}
+                Run Tests
+              </button>
             </div>
           </div>
-        </div>
-      </div>
+          
+          <div style={{ flex: 1, position: 'relative' }}>
+            {/* AI Mentor Notification */}
+            {mentorResponse && (
+              <div className={styles.mentorOverlay}>
+                <div className={styles.mentorHeader}>
+                  <div className={styles.mentorId}>
+                    <Bot size={18} />
+                    <span>AI Coding Tutor</span>
+                  </div>
+                  <button onClick={() => setMentorResponse(null)} className={styles.closeMentor}>
+                    <XCircle size={18} />
+                  </button>
+                </div>
+                <div className={styles.mentorContent}>
+                  {mentorResponse}
+                </div>
+              </div>
+            )}
+            
+            <Editor
+              height="100%"
+              defaultLanguage="javascript"
+              theme="vs-dark"
+              value={code}
+              onChange={(val) => setCode(val || '')}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 15,
+                padding: { top: 20 },
+                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                lineNumbers: 'on',
+                roundedSelection: true,
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                cursorBlinking: 'smooth',
+                cursorSmoothCaretAnimation: 'on',
+                smoothScrolling: true,
+              }}
+            />
+          </div>
+        </section>
+
+        {/* Info & Results Panel */}
+        <section className={styles.infoPanel}>
+          <div className={`${styles.card} ${styles.challengeDescContainer}`}>
+            <h2>{selectedChallenge?.title}</h2>
+            <div className={styles.descriptionText}>
+              {selectedChallenge?.description}
+            </div>
+          </div>
+
+          <div className={styles.card} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div className={styles.outputHeader}>
+              <span className={styles.outputTitle}>Compiler Output</span>
+              {results && (
+                <span style={{ 
+                  color: results.success ? 'var(--success)' : 'var(--danger)',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.1em'
+                }}>
+                  {results.success ? 'PASSED' : 'FAILED'}
+                </span>
+              )}
+            </div>
+            
+            <div className={styles.outputBody}>
+              {results ? (
+                <div className="space-y-4">
+                  {results.results.map((r: any, i: number) => (
+                    <div key={i} className={`${styles.testCase} ${r.passed ? styles.testCasePassed : styles.testCaseFailed}`}>
+                      {r.passed ? <CheckCircle className="text-success" size={16} /> : <AlertCircle className="text-danger" size={16} />}
+                      <div className={styles.testInfo}>
+                        <p style={{ color: r.passed ? 'var(--text)' : 'var(--danger)', fontWeight: 600 }}>
+                          Test Case {i + 1}
+                        </p>
+                        {!r.passed && (
+                          <div className={styles.testActual}>
+                            Expected: {JSON.stringify(r.expected)} | Got: {JSON.stringify(r.actual || r.error)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {results.success && (
+                    <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)', textAlign: 'center' }}>
+                      <Sparkles size={24} className="text-success" style={{ margin: '0 auto 0.5rem' }} />
+                      <div style={{ color: 'var(--success)', fontWeight: 700, fontSize: '0.9rem' }}>Challenge Completed!</div>
+                      <div style={{ color: 'var(--text2)', fontSize: '0.75rem' }}>+10 Imihigo Tokens earned</div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text3)', border: '2px dashed var(--border)', borderRadius: '16px' }}>
+                  <Play size={24} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+                  <p>Submit your solution to see test results</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
   )
 }
