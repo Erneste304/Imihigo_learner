@@ -19,7 +19,7 @@ export default function Courses() {
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    api.get('/instructors/my-courses') // Using instructor routes for now or a general endpoint
+    api.get('/courses')
       .then(res => setCourses(res.data.data))
       .catch(console.error)
       .finally(() => setLoading(false))

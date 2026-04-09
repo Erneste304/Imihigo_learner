@@ -25,6 +25,7 @@ import studyGroupRoutes from './routes/study-groups.js'
 import certificationRoutes from './routes/certification.js'
 import instructorRoutes from './routes/instructor.js'
 import resumeRoutes from './routes/resume.js'
+import coursesRoutes from './routes/courses.js'
 
 
 const __filename = fileURLToPath(import.meta.url)
@@ -53,6 +54,7 @@ app.use('/api/community', communityRoutes)
 app.use('/api/leaderboard', leaderboardRoutes)
 app.use('/api/video', videoRoutes)
 app.use('/api/payments', paymentRoutes)
+app.use('/api/courses', coursesRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/enterprise', enterpriseRoutes)
 app.use('/api/resumes', resumeRoutes)
