@@ -22,6 +22,7 @@ import StudyGroups from './pages/StudyGroups'
 import Instructor from './pages/Instructor'
 import Courses from './pages/Courses'
 import VerifyCertificate from './pages/VerifyCertificate'
+import TermsConditions from './pages/TermsConditions'
 
 function PrivateRoute({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth()
@@ -56,6 +57,7 @@ function AppRoutes() {
         <Route path="/verify/:certId" element={<VerifyCertificate />} />
         <Route path="/verify" element={<VerifyCertificate />} />
         <Route path="/enterprise" element={<PrivateRoute><Employer /></PrivateRoute>} />
+        <Route path="/terms" element={<TermsConditions />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>

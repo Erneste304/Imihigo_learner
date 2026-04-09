@@ -52,13 +52,123 @@
 .featureCard {
   background: #111827; border: 1px solid rgba(255,255,255,0.07);
   border-radius: 16px; padding: 1.75rem;
-  transition: border-color 0.2s, transform 0.2s;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
 }
-.featureCard:hover { border-color: rgba(99,102,241,0.4); transform: translateY(-2px); }
+.featureCard:hover { border-color: rgba(99,102,241,0.4); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+.featureCardActive { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
 
 .featureIcon { font-size: 2.2rem; margin-bottom: 1rem; }
 .featureCard h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
 .featureCard p { color: #9ca3af; font-size: 0.9rem; line-height: 1.6; }
+
+.featureCardToggle {
+  margin-top: 1rem; font-size: 0.78rem; font-weight: 600;
+  opacity: 0.7; transition: opacity 0.15s;
+}
+.featureCard:hover .featureCardToggle { opacity: 1; }
+
+/* ── Feature Detail Overlay ── */
+.featureDetailOverlay {
+  margin-top: 2rem;
+  background: #111827;
+  border: 1px solid rgba(99,102,241,0.3);
+  border-radius: 20px;
+  overflow: hidden;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.featureDetailOverlayHeader {
+  display: flex; align-items: flex-start; gap: 1.25rem;
+  padding: 1.75rem 2rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  position: relative;
+}
+
+.featureDetailOverlayIcon { font-size: 2.5rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+.featureDetailOverlayTitle {
+  font-size: 1.25rem; font-weight: 800; margin: 0 0 0.5rem;
+}
+
+.featureDetailOverlayDesc {
+  font-size: 0.92rem; color: #9ca3af; line-height: 1.7; margin: 0;
+}
+
+.featureDetailClose {
+  position: absolute; top: 1.25rem; right: 1.5rem;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  color: #9ca3af; font-size: 0.9rem; width: 30px; height: 30px;
+  border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s; flex-shrink: 0;
+}
+.featureDetailClose:hover { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+.featureDetailOverlayBody {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+}
+@media (max-width: 700px) { .featureDetailOverlayBody { grid-template-columns: 1fr; } }
+
+.featureDetailCol {
+  padding: 1.75rem 2rem;
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+.featureDetailCol:last-child { border-right: none; }
+
+.featureDetailColTitle {
+  font-size: 0.82rem; font-weight: 700; color: #e5e7eb;
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1rem;
+}
+
+.featureDetailSteps {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 0.75rem;
+}
+
+.featureDetailSteps li {
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  font-size: 0.88rem; color: #d1d5db; line-height: 1.55;
+}
+
+.featureDetailStepNum {
+  flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-weight: 800; margin-top: 1px;
+}
+
+.featureDetailBenefits {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 0.65rem;
+}
+
+.featureDetailBenefits li {
+  display: flex; align-items: flex-start; gap: 0.6rem;
+  font-size: 0.88rem; color: #d1d5db; line-height: 1.55;
+}
+
+.featureDetailBenefits li span { flex-shrink: 0; font-weight: 700; }
+
+.featureDetailOverlayFooter {
+  padding: 1.25rem 2rem;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+}
+
+.featureDetailOverlayBtn {
+  display: inline-block; font-size: 0.88rem; font-weight: 700;
+  padding: 0.55rem 1.25rem; border-radius: 10px;
+  border: 1px solid transparent; text-decoration: none;
+  transition: opacity 0.15s;
+}
+.featureDetailOverlayBtn:hover { opacity: 0.85; }
+
+.featureDetailCloseBtn {
+  background: transparent; border: 1px solid rgba(255,255,255,0.12);
+  color: #6b7280; font-size: 0.85rem; font-weight: 600;
+  padding: 0.5rem 1.1rem; border-radius: 10px; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.featureDetailCloseBtn:hover { background: rgba(255,255,255,0.06); color: #d1d5db; }
 
 .howIt { padding: 5rem 0; background: rgba(255,255,255,0.01); }
 

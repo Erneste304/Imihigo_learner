@@ -176,4 +176,45 @@ router.get('/activities', (_req: Request, res: Response) => {
   res.json({ success: true, data: db.activities || [] })
 })
 
+// ── Terms & Conditions Compliance ──────────────────────────────────────
+router.get('/terms-compliance', (_req: Request, res: Response) => {
+  const data = db.users.map(({ password, ...u }) => ({
+    ...u,
+    tcAccepted: (u as any).tcAccepted === true,
+    tcAcceptedAt: (u as any).tcAcceptedAt || null,
+  }))
+  const stats = {
+    total: data.length,
+    accepted: data.filter(u => u.tcAccepted).length,
+    pending: data.filter(u => !u.tcAccepted).length,
+    suspended: data.filter(u => u.suspended).length,
+  }
+  res.json({ success: true, data, stats })
+})
+
+router.put('/users/:userId/tc-deactivate', (req: Request, res: Response) => {
+  const user = db.users.find(u => u.id === req.params.userId)
+  if (!user) return res.status(404).json({ success: false, message: 'User not found' })
+  user.suspended = true
+  saveDb()
+  res.json({ success: true, message: 'User deactivated for T&C non-compliance' })
+})
+
+router.put('/users/:userId/tc-activate', (req: Request, res: Response) => {
+  const user = db.users.find(u => u.id === req.params.userId)
+  if (!user) return res.status(404).json({ success: false, message: 'User not found' })
+  user.suspended = false
+  saveDb()
+  res.json({ success: true, message: 'User reactivated' })
+})
+
+router.put('/users/:userId/tc-accept', (req: Request, res: Response) => {
+  const user = db.users.find(u => u.id === req.params.userId)
+  if (!user) return res.status(404).json({ success: false, message: 'User not found' })
+  ;(user as any).tcAccepted = true
+  ;(user as any).tcAcceptedAt = new Date().toISOString()
+  saveDb()
+  res.json({ success: true, message: 'T&C marked as accepted for user' })
+})
+
 export default router

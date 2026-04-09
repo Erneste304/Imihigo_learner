@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 import styles from './Admin.module.css'
-import { Users, BookOpen, Briefcase, DollarSign, CheckCircle, Activity, Shield, Video, Trash2, ToggleLeft, ToggleRight, Star } from 'lucide-react'
+import { Users, BookOpen, Briefcase, DollarSign, CheckCircle, Activity, Shield, Video, Trash2, ToggleLeft, ToggleRight, Star, FileText } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { io as connectSocket } from 'socket.io-client'
 
 interface Stats {
@@ -20,7 +21,7 @@ interface Stats {
   activeCourses: number
 }
 
-type Tab = 'overview' | 'users' | 'courses' | 'tutorials' | 'jobs' | 'verifications' | 'settings'
+type Tab = 'overview' | 'users' | 'courses' | 'tutorials' | 'jobs' | 'verifications' | 'terms' | 'settings'
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'overview',      label: 'Overview',      icon: <Activity size={15} /> },
@@ -29,6 +30,7 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'tutorials',     label: 'Tutorials',      icon: <Video size={15} /> },
   { id: 'jobs',          label: 'Jobs',           icon: <Briefcase size={15} /> },
   { id: 'verifications', label: 'Verifications',  icon: <CheckCircle size={15} /> },
+  { id: 'terms',         label: 'T&C Compliance', icon: <FileText size={15} /> },
   { id: 'settings',      label: 'Settings',       icon: <DollarSign size={15} /> },
 ]
 
@@ -62,6 +64,9 @@ export default function Admin() {
   const [verifications, setVerifications] = useState<any[]>([])
   const [settings, setSettings] = useState<any[]>([])
   const [activityFeed, setActivityFeed] = useState<any[]>([])
+  const [tcUsers, setTcUsers] = useState<any[]>([])
+  const [tcStats, setTcStats] = useState<any>(null)
+  const [tcFilter, setTcFilter] = useState<'all' | 'accepted' | 'pending'>('all')
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
@@ -78,7 +83,8 @@ export default function Admin() {
       api.get('/admin/verifications'),
       api.get('/admin/settings'),
       api.get('/admin/activities'),
-    ]).then(([st, us, co, tu, jo, ve, se, ac]) => {
+      api.get('/admin/terms-compliance'),
+    ]).then(([st, us, co, tu, jo, ve, se, ac, tc]) => {
       if (st.data.success) setStats(st.data.data)
       if (us.data.success) setUsers(us.data.data)
       if (co.data.success) setCourses(co.data.data)
@@ -87,6 +93,7 @@ export default function Admin() {
       if (ve.data.success) setVerifications(ve.data.data)
       if (se.data.success) setSettings(se.data.data)
       if (ac.data.success) setActivityFeed(ac.data.data)
+      if (tc.data.success) { setTcUsers(tc.data.data); setTcStats(tc.data.stats) }
     }).catch(console.error).finally(() => setLoading(false))
   }, [token])
 
@@ -145,6 +152,21 @@ export default function Admin() {
   async function updateSetting(key: string, value: any) {
     await api.put(`/admin/settings/${key}`, { value })
     setSettings(ss => ss.map(s => s.key === key ? { ...s, value } : s))
+  }
+
+  async function tcDeactivate(userId: string) {
+    const res = await api.put(`/admin/users/${userId}/tc-deactivate`, {})
+    if (res.data.success) setTcUsers(ts => ts.map(u => u.id === userId ? { ...u, suspended: true } : u))
+  }
+
+  async function tcActivate(userId: string) {
+    const res = await api.put(`/admin/users/${userId}/tc-activate`, {})
+    if (res.data.success) setTcUsers(ts => ts.map(u => u.id === userId ? { ...u, suspended: false } : u))
+  }
+
+  async function tcMarkAccepted(userId: string) {
+    const res = await api.put(`/admin/users/${userId}/tc-accept`, {})
+    if (res.data.success) setTcUsers(ts => ts.map(u => u.id === userId ? { ...u, tcAccepted: true, tcAcceptedAt: new Date().toISOString() } : u))
   }
 
   if (loading) return <div className="page" style={{ display:'flex', justifyContent:'center', alignItems:'center' }}><div className="spinner" /></div>
@@ -484,6 +506,151 @@ export default function Admin() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* ── TERMS & CONDITIONS COMPLIANCE ── */}
+        {activeTab === 'terms' && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+              {[
+                { label: 'Total Users', value: tcStats?.total ?? 0, color: '#6366f1' },
+                { label: 'Accepted T&C', value: tcStats?.accepted ?? 0, color: '#10b981' },
+                { label: 'Pending Acceptance', value: tcStats?.pending ?? 0, color: '#f59e0b' },
+                { label: 'Suspended', value: tcStats?.suspended ?? 0, color: '#ef4444' },
+              ].map(s => (
+                <div key={s.label} className={styles.overviewCard}>
+                  <div className={styles.overviewValue} style={{ color: s.color }}>{s.value}</div>
+                  <div className={styles.overviewLabel}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className={styles.panelCard}>
+              <div className={styles.panelHeader}>
+                <h2 className={styles.panelTitle}><FileText size={20} /> Terms & Conditions Compliance</h2>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <Link to="/terms" target="_blank" style={{ fontSize: '0.82rem', color: '#a5b4fc', textDecoration: 'none', border: '1px solid rgba(99,102,241,0.3)', padding: '0.3rem 0.75rem', borderRadius: '6px' }}>
+                    View T&C Page →
+                  </Link>
+                  {(['all', 'accepted', 'pending'] as const).map(f => (
+                    <button
+                      key={f}
+                      className={`${styles.actionBtn} ${tcFilter === f ? styles.actionBtnGreen : ''}`}
+                      onClick={() => setTcFilter(f)}
+                    >
+                      {f === 'all' ? 'All' : f === 'accepted' ? '✓ Accepted' : '⏳ Pending'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className={styles.tableWrap}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th>Role</th>
+                      <th>T&C Status</th>
+                      <th>Accepted On</th>
+                      <th>Account Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tcUsers
+                      .filter(u => tcFilter === 'all' ? true : tcFilter === 'accepted' ? u.tcAccepted : !u.tcAccepted)
+                      .map(u => (
+                        <tr key={u.id} style={{ opacity: u.suspended ? 0.6 : 1 }}>
+                          <td>
+                            <div className={styles.userCell}>
+                              <div className={styles.userAvatar} style={{ background: roleColor[u.role] + '33', color: roleColor[u.role] }}>
+                                {u.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                              </div>
+                              <div>
+                                <div className={styles.userName}>{u.name}</div>
+                                <div className={styles.userEmail}>{u.email}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <span style={{ fontSize: '0.8rem', color: roleColor[u.role], fontWeight: 600 }}>{u.role}</span>
+                          </td>
+                          <td>
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                              padding: '0.2rem 0.6rem', borderRadius: '100px', fontSize: '0.75rem', fontWeight: 700,
+                              background: u.tcAccepted ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)',
+                              color: u.tcAccepted ? '#10b981' : '#f59e0b',
+                              border: `1px solid ${u.tcAccepted ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'}`,
+                            }}>
+                              {u.tcAccepted ? '✓ Accepted' : '⏳ Pending'}
+                            </span>
+                          </td>
+                          <td className={styles.dateCell}>
+                            {u.tcAcceptedAt ? new Date(u.tcAcceptedAt).toLocaleDateString() : '—'}
+                          </td>
+                          <td><StatusPill active={!u.suspended} /></td>
+                          <td>
+                            <div className={styles.actionBtns}>
+                              {!u.tcAccepted && (
+                                <button
+                                  className={`${styles.actionBtn} ${styles.actionBtnGreen}`}
+                                  onClick={() => tcMarkAccepted(u.id)}
+                                  title="Mark T&C as accepted"
+                                  disabled={u.id === user?.id}
+                                >
+                                  ✓ Mark Accepted
+                                </button>
+                              )}
+                              {u.suspended ? (
+                                <button
+                                  className={`${styles.actionBtn} ${styles.actionBtnGreen}`}
+                                  onClick={() => tcActivate(u.id)}
+                                  disabled={u.id === user?.id}
+                                >
+                                  <ToggleRight size={14} /> Activate
+                                </button>
+                              ) : (
+                                <button
+                                  className={`${styles.actionBtn} ${styles.actionBtnAmber}`}
+                                  onClick={() => tcDeactivate(u.id)}
+                                  disabled={u.id === user?.id}
+                                  title="Deactivate for T&C non-compliance"
+                                >
+                                  <ToggleLeft size={14} /> Deactivate
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+                {tcUsers.filter(u => tcFilter === 'all' ? true : tcFilter === 'accepted' ? u.tcAccepted : !u.tcAccepted).length === 0 && (
+                  <div className={styles.emptyRow}>No users in this category.</div>
+                )}
+              </div>
+            </div>
+
+            <div style={{ marginTop: '1.5rem', padding: '1.25rem 1.5rem', background: '#1f2937', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.75rem', color: '#f3f4f6' }}>
+                <Shield size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.4rem' }} />
+                Admin T&C Enforcement Policy
+              </h3>
+              <ul style={{ padding: 0, margin: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {[
+                  'Users who have not accepted T&C may have restricted access to paid features.',
+                  'Admins can deactivate accounts for non-compliance — users will see a notice on login.',
+                  'Use "Mark Accepted" only when the user has confirmed acceptance through a support ticket.',
+                  'All compliance actions are logged in the platform activity feed.',
+                  'The full Terms & Conditions are publicly available at /terms.',
+                ].map((point, i) => (
+                  <li key={i} style={{ fontSize: '0.85rem', color: '#9ca3af', display: 'flex', gap: '0.6rem' }}>
+                    <span style={{ color: '#6366f1', flexShrink: 0 }}>•</span> {point}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         )}
 

@@ -6,12 +6,84 @@ import { useAuth } from '../context/AuthContext'
 import styles from './Landing.module.css'
 
 const features = [
-  { icon: '🧠', title: 'Adaptive Skill Testing', desc: 'AI-generated personalized challenges that adapt to your level in real-time. Like HackerRank, but built for Rwanda.' },
-  { icon: '🔗', title: 'Blockchain Credentials', desc: 'Tamper-proof digital certificates on Polygon. Employers scan a QR code to instantly verify your skills.' },
-  { icon: '🎯', title: 'Smart Job Matching', desc: 'ML model matches your verified skills to job requirements and predicts success rate for each position.' },
-  { icon: '🏫', title: 'Community Learning Hubs', desc: 'Peer-to-peer teaching marketplace with Kinyarwanda video tutorials. Earn tokens for teaching others.' },
-  { icon: '📱', title: 'SMS Gig Alerts', desc: 'Get notified about gig economy jobs — delivery, data entry, tutoring — directly via SMS.' },
-  { icon: '🔒', title: 'Real-time Proctoring', desc: 'Anti-cheat system using phone camera. Every certificate is earned fairly and verifiably.' },
+  {
+    icon: '🧠',
+    title: 'Adaptive Skill Testing',
+    desc: 'AI-generated personalized challenges that adapt to your level in real-time. Like HackerRank, but built for Rwanda.',
+    details: {
+      extended: 'Our AI engine dynamically adjusts difficulty based on your responses. Start with foundational questions, and the system escalates or simplifies in real-time — giving you a fair, accurate picture of your true skill level.',
+      howItWorks: ['Choose a skill from our library of 50+ topics', 'AI calibrates first question to beginner level', 'Each correct answer increases difficulty; incorrect decreases', 'Final score is computed as a weighted average across all levels'],
+      benefits: ['Accurate assessment regardless of your starting point', 'No guessing your level — the system finds it', 'Real-time feedback on each question', 'Results certified in under 30 minutes'],
+      link: '/skills',
+      linkLabel: 'Browse Skill Tests →',
+      color: '#6366f1',
+    }
+  },
+  {
+    icon: '🔗',
+    title: 'Blockchain Credentials',
+    desc: 'Tamper-proof digital certificates on Polygon. Employers scan a QR code to instantly verify your skills.',
+    details: {
+      extended: 'Every certificate issued by Imihigo Learn is anchored to the Polygon blockchain — a permanent, immutable record that no one can forge, alter, or revoke. Your hard work is protected forever.',
+      howItWorks: ['You pass an assessment with ≥70% score', 'A unique certificate ID is generated and hashed', 'The hash is written to Polygon mainnet via smart contract', 'A QR code linking to the verification page is embedded in your PDF'],
+      benefits: ['Tamper-proof — impossible to fake', 'Employers verify in seconds by scanning a QR code', 'No employer account required to verify', 'Your credential lives permanently on-chain'],
+      link: '/verify',
+      linkLabel: 'Verify a Certificate →',
+      color: '#10b981',
+    }
+  },
+  {
+    icon: '🎯',
+    title: 'Smart Job Matching',
+    desc: 'ML model matches your verified skills to job requirements and predicts success rate for each position.',
+    details: {
+      extended: 'Our machine-learning matching engine doesn\'t just keyword-match your CV — it reads your verified skill scores, levels, and recent performance to predict your likelihood of success at each open position.',
+      howItWorks: ['Your skill scores and levels form a "Skill Vector"', 'Job requirements are parsed into a matching vector', 'Cosine similarity + weight scoring produces a match %', 'Top-matched jobs are surfaced first on your feed'],
+      benefits: ['See your success probability before applying', 'No more applying blind — know your fit score', 'Employers receive only verified, matched candidates', 'Saves hours of manual job searching'],
+      link: '/jobs',
+      linkLabel: 'Browse Matched Jobs →',
+      color: '#f59e0b',
+    }
+  },
+  {
+    icon: '🏫',
+    title: 'Community Learning Hubs',
+    desc: 'Peer-to-peer teaching marketplace with Kinyarwanda video tutorials. Earn tokens for teaching others.',
+    details: {
+      extended: 'Rwanda\'s first peer-to-peer skill marketplace in Kinyarwanda. Professionals who have passed assessments can post video tutorials, hold live workshops, and earn Ibarura tokens for every student they help succeed.',
+      howItWorks: ['Pass a skill assessment to unlock tutorial posting', 'Upload video lessons in English or Kinyarwanda', 'Students enroll and earn XP for completing lessons', 'Instructors earn Ibarura tokens per enrolled student'],
+      benefits: ['Earn while teaching — passive income from tutorials', 'Content in Kinyarwanda reaches wider Rwandan audiences', 'Build your reputation as a verified expert', 'Free access to peer-created learning content'],
+      link: '/community',
+      linkLabel: 'Join the Community →',
+      color: '#ec4899',
+    }
+  },
+  {
+    icon: '📱',
+    title: 'SMS Gig Alerts',
+    desc: 'Get notified about gig economy jobs — delivery, data entry, tutoring — directly via SMS.',
+    details: {
+      extended: 'Not everyone has reliable internet. Our SMS Gig Alert system, powered by Africa\'s Talking, ensures that every verified worker receives job opportunities directly on their basic phone — no smartphone required.',
+      howItWorks: ['Register your phone number in your profile', 'Set your preferred job types and location', 'New matching gigs trigger an instant SMS to your number', 'Reply YES to express interest — no app needed'],
+      benefits: ['Works on any phone — no smartphone required', 'Reach gig opportunities even in low-connectivity areas', 'Instant alerts — never miss a matching opportunity', 'Covers delivery, tutoring, data entry, and more'],
+      link: '/profile',
+      linkLabel: 'Set Up SMS Alerts →',
+      color: '#14b8a6',
+    }
+  },
+  {
+    icon: '🔒',
+    title: 'Real-time Proctoring',
+    desc: 'Anti-cheat system using phone camera. Every certificate is earned fairly and verifiably.',
+    details: {
+      extended: 'To make our certificates trustworthy, every assessment is monitored by our real-time proctoring system. Your phone camera records the session, and AI flags suspicious activity — ensuring every certificate reflects genuine ability.',
+      howItWorks: ['You grant camera access at the start of an assessment', 'AI monitors for tab-switching, phone use, and background noise', 'Suspicious events are flagged and logged for review', 'Certificates are only issued for clean, uninterrupted sessions'],
+      benefits: ['Certificates employers can actually trust', 'No room for cheating or impersonation', 'Fair playing field for all candidates', 'Automated — no human monitor needed'],
+      link: '/skills',
+      linkLabel: 'Start a Proctored Test →',
+      color: '#ef4444',
+    }
+  },
 ]
 
 const stats = [
@@ -250,6 +322,7 @@ export default function Landing() {
   const { user, token } = useAuth()
   const [expandedPhase, setExpandedPhase] = useState<string | null>(null)
   const [selectedItem, setSelectedItem] = useState<{ phase: string; label: string } | null>(null)
+  const [activeFeature, setActiveFeature] = useState<string | null>(null)
 
   const togglePhase = (phaseName: string) => {
     if (expandedPhase === phaseName) {
@@ -316,17 +389,74 @@ export default function Landing() {
         <div className="container">
           <div className={styles.sectionHeader}>
             <h2>Everything You Need to Prove Your Skills</h2>
-            <p>A complete platform for jobseekers, informal workers, and employers</p>
+            <p>A complete platform for jobseekers, informal workers, and employers — click any feature to learn more</p>
           </div>
           <div className="grid-3">
             {features.map(f => (
-              <div key={f.title} className={styles.featureCard}>
+              <div
+                key={f.title}
+                className={`${styles.featureCard} ${activeFeature === f.title ? styles.featureCardActive : ''}`}
+                onClick={() => setActiveFeature(activeFeature === f.title ? null : f.title)}
+                style={{ cursor: 'pointer', borderColor: activeFeature === f.title ? f.details.color + '80' : undefined }}
+              >
                 <div className={styles.featureIcon}>{f.icon}</div>
                 <h3>{f.title}</h3>
                 <p>{f.desc}</p>
+                <div className={styles.featureCardToggle} style={{ color: f.details.color }}>
+                  {activeFeature === f.title ? '▲ Less info' : '▼ Learn more'}
+                </div>
               </div>
             ))}
           </div>
+
+          {activeFeature && (() => {
+            const f = features.find(x => x.title === activeFeature)!
+            return (
+              <div className={styles.featureDetailOverlay} style={{ borderColor: f.details.color + '40' }}>
+                <div className={styles.featureDetailOverlayHeader} style={{ borderBottomColor: f.details.color + '30' }}>
+                  <span className={styles.featureDetailOverlayIcon}>{f.icon}</span>
+                  <div>
+                    <h3 className={styles.featureDetailOverlayTitle} style={{ color: f.details.color }}>{f.title}</h3>
+                    <p className={styles.featureDetailOverlayDesc}>{f.details.extended}</p>
+                  </div>
+                  <button className={styles.featureDetailClose} onClick={() => setActiveFeature(null)}>✕</button>
+                </div>
+                <div className={styles.featureDetailOverlayBody}>
+                  <div className={styles.featureDetailCol}>
+                    <div className={styles.featureDetailColTitle}>⚙️ How It Works</div>
+                    <ol className={styles.featureDetailSteps}>
+                      {f.details.howItWorks.map((step, i) => (
+                        <li key={i}>
+                          <span className={styles.featureDetailStepNum} style={{ background: f.details.color + '22', color: f.details.color }}>{i + 1}</span>
+                          {step}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                  <div className={styles.featureDetailCol}>
+                    <div className={styles.featureDetailColTitle}>✅ Key Benefits</div>
+                    <ul className={styles.featureDetailBenefits}>
+                      {f.details.benefits.map((b, i) => (
+                        <li key={i}>
+                          <span style={{ color: f.details.color }}>✓</span> {b}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+                <div className={styles.featureDetailOverlayFooter}>
+                  <Link
+                    to={f.details.link}
+                    className={styles.featureDetailOverlayBtn}
+                    style={{ background: f.details.color + '22', borderColor: f.details.color + '50', color: f.details.color }}
+                  >
+                    {f.details.linkLabel}
+                  </Link>
+                  <button className={styles.featureDetailCloseBtn} onClick={() => setActiveFeature(null)}>Close</button>
+                </div>
+              </div>
+            )
+          })()}
         </div>
       </section>
 
@@ -448,6 +578,12 @@ export default function Landing() {
             <h2>Ready to prove what you can do?</h2>
             <p>Join thousands of Rwandan professionals building verified careers on Imihigo Learn.</p>
             <Link to="/auth?tab=register" className="btn btn-primary btn-lg">Create Free Account →</Link>
+            <div style={{ marginTop: '1.25rem', fontSize: '0.82rem', color: '#6b7280' }}>
+              By creating an account, you agree to our{' '}
+              <Link to="/terms" style={{ color: '#a5b4fc', textDecoration: 'underline' }}>Terms & Conditions</Link>
+              {' '}and{' '}
+              <Link to="/terms#privacy" style={{ color: '#a5b4fc', textDecoration: 'underline' }}>Privacy Policy</Link>.
+            </div>
           </div>
         </div>
       </section>
