@@ -70,7 +70,7 @@ export default function Skills() {
               </div>
 
               <div className={styles.skillTags}>
-                {skill.tags.map(t => <span key={t} className="tag">{t}</span>)}
+                {(skill.tags ?? []).map(t => <span key={t} className="tag">{t}</span>)}
               </div>
 
               <button className={`btn btn-primary ${styles.startBtn}`} onClick={() => startAssessment(skill.id)}>
