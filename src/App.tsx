@@ -21,6 +21,8 @@ import CodingLab from './pages/CodingLab'
 import StudyGroups from './pages/StudyGroups'
 import Instructor from './pages/Instructor'
 import Courses from './pages/Courses'
+import CourseDetails from './pages/CourseDetails'
+import AdaptiveAssessment from './pages/AdaptiveAssessment'
 import VerifyCertificate from './pages/VerifyCertificate'
 import TermsConditions from './pages/TermsConditions'
 
@@ -54,6 +56,8 @@ function AppRoutes() {
         <Route path="/study-groups" element={<PrivateRoute><StudyGroups /></PrivateRoute>} />
         <Route path="/instructor" element={<PrivateRoute><Instructor /></PrivateRoute>} />
         <Route path="/courses" element={<PrivateRoute><Courses /></PrivateRoute>} />
+        <Route path="/courses/:id" element={<PrivateRoute><CourseDetails /></PrivateRoute>} />
+        <Route path="/adaptive-test" element={<PrivateRoute><AdaptiveAssessment /></PrivateRoute>} />
         <Route path="/verify/:certId" element={<VerifyCertificate />} />
         <Route path="/verify" element={<VerifyCertificate />} />
         <Route path="/enterprise" element={<PrivateRoute><Employer /></PrivateRoute>} />

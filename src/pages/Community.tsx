@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import styles from './Community.module.css'
+import { Helmet } from 'react-helmet-async'
+import { Play, Eye, ThumbsUp, UploadCloud, Globe, X, Video, Users } from 'lucide-react'
 
 interface Tutorial {
   id: string
@@ -52,7 +54,7 @@ export default function Community() {
 
   const [playingTutorial, setPlayingTutorial] = useState<Tutorial | null>(null)
 
-  const { token, user } = useAuth()
+  const { token } = useAuth()
   const { t } = useLang()
   const videoRef = useRef<HTMLVideoElement>(null)
 
@@ -111,14 +113,22 @@ export default function Community() {
 
   return (
     <div className="page">
+      <Helmet>
+        <title>Community Learning Hub | Imihigo Learn</title>
+      </Helmet>
+      
       <div className="container">
         <div className={styles.header}>
           <div>
             <div className={styles.titleRow}>
               <h1>{t('Community')}</h1>
-              <span className="badge badge-primary">Peer Learning Hub</span>
+              <span className="badge badge-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Users size={14} /> Peer Learning Hub
+              </span>
             </div>
-            <p className="text-muted">Video tutorials by verified experts — in English & Kinyarwanda 🇷🇼</p>
+            <p className="text-muted" style={{ fontSize: '1.05rem' }}>
+              Video tutorials by verified experts — in English & Kinyarwanda 🇷🇼
+            </p>
           </div>
           <div className={styles.headerStats}>
             <div className={styles.headerStat}>
@@ -135,25 +145,35 @@ export default function Community() {
         <div className={styles.controls}>
           <div className={styles.catFilters}>
             {categories.map(c => (
-              <button key={c} className={`${styles.catBtn} ${filter === c ? styles.catActive : ''}`} onClick={() => setFilter(c)}>{c}</button>
+              <button key={c} className={`${styles.catBtn} ${filter === c ? styles.catActive : ''}`} onClick={() => setFilter(c)}>
+                {c}
+              </button>
             ))}
           </div>
           <div className={styles.langSwitch}>
-            <button className={`${styles.langBtn} ${langFilter === '' ? styles.langActive : ''}`} onClick={() => setLangFilter('')}>All Languages</button>
-            <button className={`${styles.langBtn} ${langFilter === 'en' ? styles.langActive : ''}`} onClick={() => setLangFilter('en')}>English</button>
-            <button className={`${styles.langBtn} ${langFilter === 'rw' ? styles.langActive : ''}`} onClick={() => setLangFilter('rw')}>🇷🇼 Kinyarwanda</button>
+            <button className={`${styles.langBtn} ${langFilter === '' ? styles.langActive : ''}`} onClick={() => setLangFilter('')}>
+              <Globe size={16} /> All Languages
+            </button>
+            <button className={`${styles.langBtn} ${langFilter === 'en' ? styles.langActive : ''}`} onClick={() => setLangFilter('en')}>
+              English
+            </button>
+            <button className={`${styles.langBtn} ${langFilter === 'rw' ? styles.langActive : ''}`} onClick={() => setLangFilter('rw')}>
+              🇷🇼 Kinyarwanda
+            </button>
           </div>
         </div>
 
-        <div className="grid-3">
+        <div className={styles.tutGrid}>
           {tutorials.map(tutorial => (
-            <div key={tutorial.id} className={`card ${styles.tutCard}`}>
+            <div key={tutorial.id} className={styles.tutCard}>
               <div
                 className={styles.thumb}
-                style={{ background: `linear-gradient(135deg, ${tutorial.thumbnailColor}33, ${tutorial.thumbnailColor}11)`, borderColor: tutorial.thumbnailColor + '44', cursor: 'pointer' }}
+                style={{ background: `linear-gradient(135deg, ${tutorial.thumbnailColor}33, ${tutorial.thumbnailColor}11)` }}
                 onClick={() => openPlayer(tutorial)}
               >
-                <div className={styles.playBtn} style={{ background: tutorial.thumbnailColor }}>▶</div>
+                <div className={styles.playBtn} style={{ background: tutorial.thumbnailColor }}>
+                  <Play fill="white" size={24} />
+                </div>
                 <span className={styles.duration}>{tutorial.duration}</span>
                 {tutorial.language === 'rw' && <span className={styles.rwBadge}>🇷🇼 Kinyarwanda</span>}
                 {tutorial.language === 'both' && <span className={styles.rwBadge}>🇷🇼 + EN</span>}
@@ -164,20 +184,21 @@ export default function Community() {
                   <span className={`badge ${levelBadge[tutorial.level] || 'badge-gray'}`}>{tutorial.level}</span>
                   <span className={styles.category}>{tutorial.category}</span>
                 </div>
-                <h3 className={styles.tutTitle} style={{ cursor: 'pointer' }} onClick={() => openPlayer(tutorial)}>{tutorial.title}</h3>
+                
+                <h3 className={styles.tutTitle} onClick={() => openPlayer(tutorial)}>{tutorial.title}</h3>
                 <p className={styles.tutDesc}>{tutorial.description}</p>
 
                 <div className={styles.tags}>
-                  {tutorial.tags.map(tag => <span key={tag} className="tag">#{tag}</span>)}
+                  {tutorial.tags.map(tag => <span key={tag} className={styles.tagCard}>#{tag}</span>)}
                 </div>
 
                 <div className={styles.tutFooter}>
                   <span className={styles.author}>by {tutorial.authorName}</span>
                   <div className={styles.tutMeta}>
                     <button className={styles.likeBtn} onClick={() => handleLike(tutorial.id)} disabled={!token || liking === tutorial.id}>
-                      ❤️ {tutorial.likes}
+                      <ThumbsUp size={14} /> {tutorial.likes}
                     </button>
-                    <span className={styles.views}>👁 {tutorial.views.toLocaleString()}</span>
+                    <span className={styles.metaStat}><Eye size={14} /> {tutorial.views.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
@@ -186,8 +207,9 @@ export default function Community() {
         </div>
 
         {tutorials.length === 0 && (
-          <div style={{ textAlign:'center', padding:'4rem 0', color:'#6b7280' }}>
-            No tutorials found. Be the first to contribute!
+          <div style={{ textAlign:'center', padding:'5rem 0', color:'#64748b' }}>
+            <Video size={48} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+            <p style={{ fontSize: '1.1rem', fontWeight: 600 }}>No tutorials found. Be the first to contribute!</p>
           </div>
         )}
 
@@ -195,10 +217,10 @@ export default function Community() {
           <div className={styles.contributeInner}>
             <div>
               <h3>Share Your Knowledge 🎓</h3>
-              <p>Verified experts earn <strong className="text-warning">50 tokens</strong> per approved tutorial. Teach in Kinyarwanda to reach more learners!</p>
+              <p>Verified experts earn <strong className="text-emerald-400" style={{ fontWeight: 800 }}>50 tokens</strong> per approved tutorial. Teach in Kinyarwanda to reach more learners!</p>
             </div>
-            <button className="btn btn-primary" onClick={() => { if (!token) { window.location.href = '/auth'; return; } setShowUpload(true) }}>
-              + Upload Tutorial
+            <button className="btn btn-primary" style={{ padding: '0.8rem 1.5rem', fontWeight: 800 }} onClick={() => { if (!token) { window.location.href = '/auth'; return; } setShowUpload(true) }}>
+              <UploadCloud size={20} /> Upload Tutorial
             </button>
           </div>
         </div>
@@ -213,7 +235,7 @@ export default function Community() {
                 <h2 className={styles.playerTitle}>{playingTutorial.title}</h2>
                 <p className={styles.playerMeta}>by {playingTutorial.authorName} · {playingTutorial.duration}</p>
               </div>
-              <button className={styles.playerClose} onClick={() => setPlayingTutorial(null)}>✕</button>
+              <button className={styles.playerClose} onClick={() => setPlayingTutorial(null)}><X size={20} /></button>
             </div>
 
             <div className={styles.playerScreen}>
@@ -221,7 +243,6 @@ export default function Community() {
                 <iframe
                   src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1`}
                   title={playingTutorial.title}
-                  frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   className={styles.playerIframe}
@@ -236,7 +257,7 @@ export default function Community() {
                 />
               ) : (
                 <div className={styles.playerPlaceholder} style={{ background: `linear-gradient(135deg, ${playingTutorial.thumbnailColor}33, ${playingTutorial.thumbnailColor}11)` }}>
-                  <div className={styles.playerPlaceholderIcon} style={{ color: playingTutorial.thumbnailColor }}>▶</div>
+                  <div className={styles.playerPlaceholderIcon} style={{ color: playingTutorial.thumbnailColor }}><Play fill="currentColor" size={32} /></div>
                   <p>No video uploaded yet</p>
                   <span>Upload a YouTube link or video file to play here</span>
                 </div>
@@ -246,13 +267,13 @@ export default function Community() {
             <div className={styles.playerInfo}>
               <p className={styles.playerDesc}>{playingTutorial.description}</p>
               <div className={styles.playerTags}>
-                {playingTutorial.tags.map(tag => <span key={tag} className="tag">#{tag}</span>)}
+                {playingTutorial.tags.map(tag => <span key={tag} className={styles.tagCard}>#{tag}</span>)}
               </div>
               <div className={styles.playerActions}>
-                <button className={styles.likeBtn} onClick={() => { handleLike(playingTutorial.id); setPlayingTutorial(t => t ? { ...t, likes: t.likes + 1 } : t) }} disabled={!token}>
-                  ❤️ {playingTutorial.likes} Likes
+                <button className={styles.likeBtn} style={{ fontSize: '1rem', color: '#fff' }} onClick={() => { handleLike(playingTutorial.id); setPlayingTutorial(t => t ? { ...t, likes: t.likes + 1 } : t) }} disabled={!token}>
+                  <ThumbsUp size={18} /> {playingTutorial.likes} Likes
                 </button>
-                <span className={styles.views}>👁 {playingTutorial.views.toLocaleString()} views</span>
+                <span className={styles.metaStat} style={{ fontSize: '1rem', color: '#94a3b8' }}><Eye size={18} /> {playingTutorial.views.toLocaleString()} views</span>
               </div>
             </div>
           </div>
@@ -268,7 +289,7 @@ export default function Community() {
                 <h2 className={styles.playerTitle}>Upload a Tutorial 🎓</h2>
                 <p className={styles.playerMeta}>Share your knowledge and earn 50 tokens</p>
               </div>
-              <button className={styles.playerClose} onClick={() => setShowUpload(false)}>✕</button>
+              <button className={styles.playerClose} onClick={() => setShowUpload(false)}><X size={20} /></button>
             </div>
 
             <form onSubmit={handleUpload} className={styles.uploadForm}>
@@ -319,7 +340,7 @@ export default function Community() {
               <div className="form-group">
                 <label>Video URL</label>
                 <input type="url" placeholder="YouTube link or direct video URL (optional)" value={uploadForm.videoUrl} onChange={e => setUploadForm(f => ({ ...f, videoUrl: e.target.value }))} />
-                <small style={{ color: '#6b7280', fontSize: '0.78rem', marginTop: '0.25rem', display: 'block' }}>
+                <small style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '0.4rem', display: 'block' }}>
                   Paste a YouTube link (e.g. https://youtube.com/watch?v=…) and it will be embedded automatically.
                 </small>
               </div>
@@ -328,8 +349,8 @@ export default function Community() {
 
               <div className={styles.uploadActions}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowUpload(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={uploading}>
-                  {uploading ? 'Uploading…' : '🚀 Publish Tutorial'}
+                <button type="submit" className="btn btn-primary" disabled={uploading} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {uploading ? 'Uploading…' : <><UploadCloud size={18} /> Publish Tutorial</>}
                 </button>
               </div>
             </form>

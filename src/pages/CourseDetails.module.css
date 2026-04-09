@@ -1,0 +1,270 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* ── Hero ── */
+.hero {
+  padding: 5rem 0;
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 4rem;
+  align-items: center;
+}
+
+.heroLeft {
+  max-width: 700px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #6366f1;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.title {
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+.instructorRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.instructorAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #1f2937;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #6366f1;
+  font-size: 1.1rem;
+}
+
+.instructorInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.instructorName {
+  font-weight: 700;
+  color: #fff;
+}
+
+.instructorTitle {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.description {
+  font-size: 1.15rem;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin-bottom: 3rem;
+}
+
+/* ── CTA Card ── */
+.ctaCard {
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 2.5rem;
+  position: sticky;
+  top: 6rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.priceDisplay {
+  margin-bottom: 2rem;
+}
+
+.priceLabel {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+}
+
+.price {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.enrollBtn {
+  width: 100%;
+  padding: 1.15rem;
+  background: #6366f1;
+  color: #fff;
+  border-radius: 16px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  transition: all 0.2s;
+  box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+}
+
+.enrollBtn:hover {
+  background: #4f46e5;
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.5);
+}
+
+.valueProps {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.prop {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: #d1d5db;
+  font-weight: 500;
+}
+
+.propIcon {
+  color: #10b981;
+}
+
+/* ── Section Styles ── */
+.section {
+  padding: 5rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sectionTitle {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* ── Certificate Preview ── */
+.certPreview {
+  background: linear-gradient(135deg, #111827 0%, #0b0f1a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.certVisual {
+  width: 100%;
+  max-width: 600px;
+  background: #fff;
+  aspect-ratio: 1.414/1;
+  border-radius: 8px;
+  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #111827;
+  position: relative;
+}
+
+.certHeader { font-size: 0.8rem; font-weight: 800; color: #6366f1; text-transform: uppercase; letter-spacing: 0.2em; text-align: center; }
+.certStamp { position: absolute; top: 1rem; right: 1rem; font-size: 2rem; opacity: 0.2; }
+.certBody { text-align: center; }
+.certName { font-size: 1.5rem; font-weight: 900; margin: 1rem 0; border-bottom: 2px solid #ea580c; display: inline-block; padding: 0 1rem; filter: blur(4px); }
+.certDesc { font-size: 0.75rem; color: #4b5563; max-width: 400px; margin: 0 auto; }
+.certSigns { display: flex; justify-content: space-between; margin-top: 1rem; }
+.certSign { border-top: 1.5px solid #111827; width: 120px; padding-top: 0.4rem; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; }
+
+/* ── Curriculum ── */
+.curriculum {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.lessonCard {
+  background: #1a202c;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.lessonCard:hover {
+  background: #2d3748;
+  border-color: #6366f1;
+}
+
+.lessonMain {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.lessonId {
+  width: 32px;
+  height: 32px;
+  background: rgba(99, 102, 241, 0.1);
+  color: #818cf8;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.lessonTitle {
+  font-weight: 700;
+  color: #ececec;
+}
+
+.lessonMeta {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+@media (max-width: 1024px) {
+  .hero { grid-template-columns: 1fr; padding: 3rem 0; gap: 2rem; }
+  .ctaCard { position: static; }
+  .title { font-size: 2.5rem; }
+}
