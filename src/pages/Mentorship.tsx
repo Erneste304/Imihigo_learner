@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../services/api'
-import { Users, Star, MessageSquare, Calendar, Search, Filter, Globe, BarChart } from 'lucide-react'
+import { Users, Star, MessageSquare, Calendar, Search, Filter, Globe, BarChart, CheckCircle } from 'lucide-react'
 import BookingModal from '../components/BookingModal'
 
 interface Mentor {
